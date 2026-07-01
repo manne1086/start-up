@@ -1,0 +1,6 @@
+{
+  "name": "VentureForge",
+  "description": "AI Startup Generator platform - From Idea to Investor-Ready Startup in Minutes",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

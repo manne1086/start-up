@@ -1,0 +1,16 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Python backend
+ventureforge-backend/myenv/
+ventureforge-backend/**/__pycache__/
+ventureforge-backend/**/*.py[cod]
+ventureforge-backend/.pytest_cache/
+ventureforge-backend/.mypy_cache/
+ventureforge-backend/.ruff_cache/

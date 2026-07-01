@@ -1,0 +1,52 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+body {
+  background-color: #0A0A0F;
+  color: #F0F0F0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom scrollbar for terminal/agent logs */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #0A0A0F; 
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #6C47FF; 
+  border: 1px solid #0A0A0F;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #00D4AA; 
+}
+
+/* Apply eclipse/ellipse shape to UI elements globally */
+button, 
+input, 
+select, 
+textarea, 
+.border-2,
+.border,
+.bg-\[\#111118\] {
+  border-radius: 50px !important;
+}
+
+button {
+  border-radius: 9999px !important;
+}
+
+span.border {
+  border-radius: 9999px !important;
+}
+
+.border-b, .border-t, .border-l, .border-r {
+  border-radius: 0 !important;
+}
