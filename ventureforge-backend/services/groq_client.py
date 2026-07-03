@@ -12,21 +12,21 @@ from graph.state import AgentLog, StartupState
 
 reasoning_llm = ChatGroq(
     model="llama-3.3-70b-versatile",
-    temperature=0.4,
+    temperature=0.3,
     max_tokens=4096,
     api_key=settings.GROQ_API_KEY,
 )
 
 code_llm = ChatGroq(
     model="llama-3.1-70b-versatile",
-    temperature=0.1,
+    temperature=0.3,
     max_tokens=4096,
     api_key=settings.GROQ_API_KEY,
 )
 
 validator_llm = ChatGroq(
     model="llama-3.3-70b-versatile",
-    temperature=0.0,
+    temperature=0.3,
     max_tokens=2048,
     api_key=settings.GROQ_API_KEY,
 )

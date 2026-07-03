@@ -1,38 +1,29 @@
 import { AlertTriangle, ArrowRight, RefreshCw, Terminal, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
+import { useGeneration } from '../generation';
 import GlobalNavbar from './GlobalNavbar';
 import { useRouter } from '../router';
 
-const pivots = [
-  { 
-    id: 1, 
-    name: 'Tier 2-3 Vernacular Focus', 
-    rationale: 'Bypass Tier 1 saturation by targeting UP/MP budget schools with Hindi-first UI.', 
-    impact: '+₹1.2Cr', 
-    impactType: 'positive',
-    tam: '$2.1B (Niche)' 
-  },
-  { 
-    id: 2, 
-    name: 'B2C Direct to Parent', 
-    rationale: 'Sell directly to parents for after-school tutoring. Higher CAC but better margins.', 
-    impact: '-₹0.4Cr', 
-    impactType: 'negative',
-    tam: '$5.5B (Broad)' 
-  },
-  { 
-    id: 3, 
-    name: 'Govt School NGO Partnerships', 
-    rationale: 'Distribute via CSR funds. Extremely low CAC, high volume, but delayed sales cycles.', 
-    impact: '+₹0.8Cr', 
-    impactType: 'positive',
-    tam: '$1.8B (CSR)' 
-  }
-];
-
 export default function PivotSimulator() {
   const { navigate } = useRouter();
+  const { backendState } = useGeneration();
   const [showLog, setShowLog] = useState(false);
+
+  const pivots = backendState?.pivots?.length
+    ? backendState.pivots
+    : [
+        { id: 1, name: 'Pivot options pending', rationale: 'Run a generation to create live pivot paths.', impact: '+₹0', impactType: 'positive', adjusted_tam: '$0' },
+      ];
+
+  const transcript = backendState?.agent_logs?.length
+    ? backendState.agent_logs.slice(-8).map((log) => ({
+        agent: log.agent,
+        message: log.message,
+        status: log.status,
+      }))
+    : [
+        { agent: 'Pivot Simulator', status: 'info', message: 'Waiting for backend pivot analysis.' },
+      ];
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-[#F0F0F0] flex flex-col font-sans">
@@ -41,7 +32,9 @@ export default function PivotSimulator() {
       <main className="flex-1 w-full max-w-[1400px] mx-auto px-6 py-10">
         
         <div className="mb-8">
-          <h1 className="text-3xl font-black text-white tracking-tight mb-2">Pivot Simulator</h1>
+          <h1 className="text-3xl font-black text-white tracking-tight mb-2">
+            Pivot Simulator — {backendState?.startup_name || backendState?.idea || 'Live Startup Data'}
+          </h1>
           <p className="text-[#888899] font-medium">Stress-test your model against market reality</p>
         </div>
 
@@ -51,33 +44,33 @@ export default function PivotSimulator() {
           <div>
             <h2 className="text-lg font-black text-amber-500 uppercase tracking-wide mb-2">Adversarial Agent Finding</h2>
             <p className="text-[#F0F0F0] font-medium leading-relaxed">
-              Tier 1 city market is saturated (87th percentile competition density). 
-              Incumbents like BYJU's and Vedantu control 80% of BPS budgets. 
-              Continuing with current GTM strategy has a 92% probability of CAC exceeding LTV by Month 14. 
-              <span className="block mt-2 font-bold text-amber-500">3 pivot strategies generated.</span>
+              {backendState?.pivots?.length
+                ? 'Backend pivot analysis generated live alternatives based on the current startup state.'
+                : 'Run a generation to surface adversarial findings from the backend.'}
+              <span className="block mt-2 font-bold text-amber-500">{pivots.length} pivot strategy(ies) available.</span>
             </p>
           </div>
         </div>
 
         {/* Pivot Options */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {pivots.map(pivot => (
-            <div key={pivot.id} className="border-2 border-[#111118] bg-[#111118] p-6 flex flex-col hover:border-[#6C47FF] hover:shadow-[4px_4px_0px_#6C47FF] transition-all group">
-              <h3 className="text-xl font-black text-white mb-3">{pivot.name}</h3>
+          {pivots.map((pivot, index) => (
+            <div key={pivot.id ?? index} className="border-2 border-[#111118] bg-[#111118] p-6 flex flex-col hover:border-[#6C47FF] hover:shadow-[4px_4px_0px_#6C47FF] transition-all group">
+              <h3 className="text-xl font-black text-white mb-3">{pivot.name ?? 'Pivot option'}</h3>
               <p className="text-sm text-[#888899] leading-relaxed mb-6 flex-1">
-                {pivot.rationale}
+                {pivot.rationale ?? 'Backend pivot rationale pending.'}
               </p>
               
               <div className="bg-[#0A0A0F] border border-[#111118] p-4 mb-6">
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-xs font-bold text-[#888899] uppercase">Revenue Impact (Yr 3)</span>
                   <span className={`text-sm font-black ${pivot.impactType === 'positive' ? 'text-[#00D4AA]' : 'text-[#FF4D4F]'}`}>
-                    {pivot.impact}
+                    {pivot.impact ?? 'Pending'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-[#888899] uppercase">Adjusted TAM</span>
-                  <span className="text-sm font-bold text-white">{pivot.tam}</span>
+                  <span className="text-sm font-bold text-white">{pivot.adjusted_tam ?? pivot.tam ?? 'Pending'}</span>
                 </div>
               </div>
 
@@ -109,13 +102,11 @@ export default function PivotSimulator() {
             
             {showLog && (
               <div className="p-5 border-t-2 border-[#0A0A0F] bg-[#0D0D14] h-[300px] overflow-y-auto custom-scrollbar font-mono text-sm flex flex-col gap-3">
-                <div className="text-[#00D4AA]"><span className="opacity-50">[Market Agent]</span> Proposing B2B SaaS in Tier 1. TAM is largest here.</div>
-                <div className="text-amber-500"><span className="opacity-50">[Adversarial Agent]</span> Objection. Tier 1 CAC is $400+. Your LTV is only $350. You will bleed cash by month 8.</div>
-                <div className="text-[#6C47FF]"><span className="opacity-50">[Financial Agent]</span> Confirmed. The model breaks at 15% churn in Tier 1.</div>
-                <div className="text-[#F0F0F0]"><span className="opacity-50">[Strategy Agent]</span> Adjusting. What if we pivot to Tier 2-3 vernacular? CAC drops to $40.</div>
-                <div className="text-[#00D4AA]"><span className="opacity-50">[Market Agent]</span> Running numbers on Tier 2-3... TAM shrinks to $2.1B, but SOM increases to 12% due to low competition.</div>
-                <div className="text-[#6C47FF]"><span className="opacity-50">[Financial Agent]</span> Recalculating DCF. Yr 3 NPV turns positive (+₹1.2Cr).</div>
-                <div className="text-amber-500"><span className="opacity-50">[Adversarial Agent]</span> Acceptable. However, warn user about vernacular content creation costs.</div>
+                {transcript.map((entry, index) => (
+                  <div key={`${entry.agent}-${index}`} className={entry.status === 'success' ? 'text-[#00D4AA]' : entry.status === 'warning' ? 'text-amber-500' : entry.status === 'error' ? 'text-[#FF4D4F]' : 'text-[#6C47FF]'}>
+                    <span className="opacity-50">[{entry.agent}]</span> {entry.message}
+                  </div>
+                ))}
               </div>
             )}
           </div>

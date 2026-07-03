@@ -1,24 +1,24 @@
 import { useState } from 'react';
 import { Presentation, Download, Share2, Play, ChevronLeft, ChevronRight, RefreshCw, MoveVertical, Image as ImageIcon } from 'lucide-react';
+import { useGeneration } from '../generation';
 import GlobalNavbar from './GlobalNavbar';
-
-const slides = [
-  { id: 1, title: 'Title Slide', type: 'Title' },
-  { id: 2, title: 'The Problem', type: 'Problem' },
-  { id: 3, title: 'The Solution', type: 'Solution' },
-  { id: 4, title: 'Market Size (TAM)', type: 'Market' },
-  { id: 5, title: 'Product & MVP', type: 'Product' },
-  { id: 6, title: 'Business Model', type: 'Business' },
-  { id: 7, title: 'Go-to-Market', type: 'GTM' },
-  { id: 8, title: 'Competition', type: 'Competition' },
-  { id: 9, title: 'Financial Projections', type: 'Financials' },
-  { id: 10, title: 'Team', type: 'Team' },
-  { id: 11, title: 'The Ask', type: 'Ask' },
-  { id: 12, title: 'Contact', type: 'Contact' },
-];
 
 export default function PitchDeckEditor() {
   const [activeSlide, setActiveSlide] = useState(4); // Market slide
+  const { backendState } = useGeneration();
+
+  const pitchDeck = backendState?.pitch_deck as
+    | {
+        slides?: Array<{ number?: number; title?: string; content?: Record<string, unknown> }>;
+        brand?: { tagline?: string; primary_color?: string; secondary_color?: string; font?: string };
+      }
+    | null
+    | undefined;
+
+  const deckSlides = pitchDeck?.slides ?? [];
+  const activeContent = deckSlides.find((slide) => slide.number === activeSlide) ?? deckSlides[activeSlide - 1] ?? null;
+  const brandTagline = pitchDeck?.brand?.tagline ?? 'Pitch Deck';
+  const deckTitle = backendState?.startup_name || backendState?.idea || 'Startup';
 
   return (
     <div className="h-screen bg-[#0A0A0F] text-[#F0F0F0] flex flex-col font-sans overflow-hidden">
@@ -28,7 +28,7 @@ export default function PitchDeckEditor() {
       <div className="h-14 border-b border-[#111118] bg-[#111118] px-6 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <Presentation className="w-5 h-5 text-[#6C47FF]" />
-          <h1 className="font-bold text-white text-sm uppercase tracking-widest">Pitch Deck Editor</h1>
+          <h1 className="font-bold text-white text-sm uppercase tracking-widest">{deckTitle} Pitch Deck Editor</h1>
         </div>
         
         <div className="flex items-center gap-3">
@@ -51,14 +51,14 @@ export default function PitchDeckEditor() {
         
         {/* LEFT — Slide Navigator */}
         <div className="w-[180px] shrink-0 border-r border-[#111118] bg-[#0A0A0F] overflow-y-auto custom-scrollbar p-4 flex flex-col gap-4">
-          {slides.map((slide, i) => (
+          {deckSlides.map((slide, i) => (
             <div 
-              key={slide.id} 
-              onClick={() => setActiveSlide(slide.id)}
-              className={`relative cursor-pointer group ${activeSlide === slide.id ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}
+              key={slide.id ?? slide.number ?? i} 
+              onClick={() => setActiveSlide(slide.id ?? slide.number ?? i + 1)}
+              className={`relative cursor-pointer group ${(activeSlide === (slide.id ?? slide.number ?? i + 1)) ? 'opacity-100' : 'opacity-50 hover:opacity-100'}`}
             >
               <div className="text-[10px] font-mono text-[#888899] mb-1">{i + 1}</div>
-              <div className={`aspect-video border-2 bg-[#111118] flex items-center justify-center p-2 text-center transition-colors ${activeSlide === slide.id ? 'border-[#6C47FF] shadow-[2px_2px_0px_#6C47FF]' : 'border-[#111118] group-hover:border-[#888899]'}`}>
+              <div className={`aspect-video border-2 bg-[#111118] flex items-center justify-center p-2 text-center transition-colors ${activeSlide === (slide.id ?? slide.number ?? i + 1) ? 'border-[#6C47FF] shadow-[2px_2px_0px_#6C47FF]' : 'border-[#111118] group-hover:border-[#888899]'}`}>
                 <span className="text-[10px] font-bold text-[#F0F0F0] leading-tight">{slide.title}</span>
               </div>
               <div className="absolute top-6 -left-2 opacity-0 group-hover:opacity-100 cursor-grab">
@@ -76,27 +76,27 @@ export default function PitchDeckEditor() {
             {/* Slide Background Elements */}
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#6C47FF]/5 rounded-full blur-3xl -mr-[200px] -mt-[200px]"></div>
             
-            <h2 className="text-4xl font-black text-white tracking-tight mb-4 z-10">Market Size</h2>
+            <h2 className="text-4xl font-black text-white tracking-tight mb-4 z-10">{activeContent?.title ?? 'Pitch deck pending'}</h2>
             <div className="w-16 h-1 bg-[#00D4AA] mb-12 z-10"></div>
 
             <div className="flex-1 flex gap-8 items-center justify-center z-10">
               
               <div className="flex-1 flex flex-col items-center justify-center bg-[#0A0A0F] border border-[#111118] p-8">
                 <div className="text-sm font-bold text-[#888899] uppercase tracking-widest mb-4">TAM</div>
-                <div className="text-6xl font-black text-[#6C47FF] mb-2">$4.2B</div>
-                <div className="text-sm text-[#F0F0F0]">EdTech India (2027)</div>
+                  <div className="text-6xl font-black text-[#6C47FF] mb-2">{(backendState?.market as { tam?: string } | null | undefined)?.tam ?? '—'}</div>
+                  <div className="text-sm text-[#F0F0F0]">{brandTagline}</div>
               </div>
               
               <div className="flex-1 flex flex-col items-center justify-center bg-[#0A0A0F] border border-[#111118] p-8 shadow-[4px_4px_0px_#00D4AA]">
                 <div className="text-sm font-bold text-[#888899] uppercase tracking-widest mb-4">SAM</div>
-                <div className="text-6xl font-black text-[#00D4AA] mb-2">$820M</div>
-                <div className="text-sm text-[#F0F0F0]">Tier 2-3 BPS</div>
+                  <div className="text-6xl font-black text-[#00D4AA] mb-2">{(backendState?.market as { sam?: string } | null | undefined)?.sam ?? '—'}</div>
+                  <div className="text-sm text-[#F0F0F0]">Backend-sourced</div>
               </div>
               
               <div className="flex-1 flex flex-col items-center justify-center bg-[#0A0A0F] border border-[#111118] p-8">
                 <div className="text-sm font-bold text-[#888899] uppercase tracking-widest mb-4">SOM</div>
-                <div className="text-6xl font-black text-white mb-2">$41M</div>
-                <div className="text-sm text-[#F0F0F0]">5% Capture Yr 3</div>
+                  <div className="text-6xl font-black text-white mb-2">{(backendState?.market as { som?: string } | null | undefined)?.som ?? '—'}</div>
+                  <div className="text-sm text-[#F0F0F0]">Live generation output</div>
               </div>
 
             </div>
@@ -110,9 +110,9 @@ export default function PitchDeckEditor() {
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <span className="text-xs font-mono font-bold text-[#888899]">{activeSlide} / {slides.length}</span>
+            <span className="text-xs font-mono font-bold text-[#888899]">{activeSlide} / {deckSlides.length}</span>
             <button 
-              onClick={() => setActiveSlide(Math.min(slides.length, activeSlide + 1))}
+              onClick={() => setActiveSlide(Math.min(deckSlides.length, activeSlide + 1))}
               className="p-2 bg-[#111118] border border-[#111118] hover:border-[#6C47FF] text-white transition-colors"
             >
               <ChevronRight className="w-5 h-5" />
@@ -131,17 +131,17 @@ export default function PitchDeckEditor() {
             {/* Text Fields */}
             <div>
               <label className="block text-xs font-bold text-[#888899] uppercase tracking-widest mb-2">Heading</label>
-              <input type="text" defaultValue="Market Size" className="w-full bg-[#0A0A0F] border border-[#111118] text-[#F0F0F0] text-sm px-3 py-2 focus:outline-none focus:border-[#6C47FF] transition-colors" />
+              <input type="text" defaultValue={activeContent?.title ?? 'Market Size'} className="w-full bg-[#0A0A0F] border border-[#111118] text-[#F0F0F0] text-sm px-3 py-2 focus:outline-none focus:border-[#6C47FF] transition-colors" />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-[#888899] uppercase tracking-widest mb-2">TAM Value</label>
-              <input type="text" defaultValue="$4.2B" className="w-full bg-[#0A0A0F] border border-[#111118] text-[#F0F0F0] text-sm px-3 py-2 focus:outline-none focus:border-[#6C47FF] transition-colors" />
+              <input type="text" defaultValue={(backendState?.market as { tam?: string } | null | undefined)?.tam ?? '$4.2B'} className="w-full bg-[#0A0A0F] border border-[#111118] text-[#F0F0F0] text-sm px-3 py-2 focus:outline-none focus:border-[#6C47FF] transition-colors" />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-[#888899] uppercase tracking-widest mb-2">SAM Value</label>
-              <input type="text" defaultValue="$820M" className="w-full bg-[#0A0A0F] border border-[#111118] text-[#F0F0F0] text-sm px-3 py-2 focus:outline-none focus:border-[#00D4AA] transition-colors" />
+              <input type="text" defaultValue={(backendState?.market as { sam?: string } | null | undefined)?.sam ?? '$820M'} className="w-full bg-[#0A0A0F] border border-[#111118] text-[#F0F0F0] text-sm px-3 py-2 focus:outline-none focus:border-[#00D4AA] transition-colors" />
             </div>
 
             <div className="pt-6 border-t border-[#0A0A0F]">

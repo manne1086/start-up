@@ -5,6 +5,7 @@ import json
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
+from graph.state import AgentLog
 from graph.state import StartupState
 from services.run_manager import start_run
 
@@ -15,6 +16,13 @@ router = APIRouter()
 async def generate(payload: dict):
     thread_id = payload.get("thread_id") or str(uuid4())
     state = StartupState(thread_id=thread_id, user_id=payload.get("user_id", "anonymous"), idea=payload["idea"])
+    state.agent_logs.append(
+        AgentLog(
+            agent="Input",
+            message="Startup idea received. Initializing the agent workflow.",
+            status="info",
+        )
+    )
     await start_run(state)
     return {"thread_id": thread_id, "status": state.status, "state": state.model_dump(mode="json")}
 

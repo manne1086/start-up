@@ -1,43 +1,72 @@
 import { Download, ExternalLink, ArrowDown, ArrowUp, Minus } from 'lucide-react';
+import { useGeneration } from '../generation';
 import GlobalNavbar from './GlobalNavbar';
 
-const competitors = [
-  { name: 'BYJU\'s', founded: '2011', funding: '$5.5B', pricing: 'Premium ($500/yr)', focus: 'Tier 1 B2C', threat: 'High' },
-  { name: 'Vedantu', founded: '2014', funding: '$200M', pricing: 'Mid ($200/yr)', focus: 'Live Tutoring', threat: 'High' },
-  { name: 'Teachmint', founded: '2020', funding: '$118M', pricing: 'Freemium', focus: 'B2B ERP', threat: 'Medium' },
-  { name: 'Doubtnut', founded: '2016', funding: '$50M', pricing: 'Ad-supported', focus: 'Vernacular Doubt', threat: 'Medium' },
-  { name: 'Local Tutors', founded: '-', funding: '-', pricing: 'Low ($20/mo)', focus: 'Offline', threat: 'Low' },
-];
-
 export default function MarketResearch() {
+  const { backendState } = useGeneration();
+  const market = backendState?.market as
+    | {
+        tam?: string;
+        sam?: string;
+        som?: string;
+        tam_source?: string;
+        competitors?: Array<{
+          name?: string;
+          founded?: string;
+          funding?: string;
+          pricing?: string;
+          focus?: string;
+          threat_level?: string;
+        }>;
+        market_gaps?: string[];
+        raw_search_results?: string[];
+      }
+    | null
+    | undefined;
+
+  const competitors = market?.competitors?.length
+    ? market.competitors.map((competitor) => ({
+        name: competitor.name ?? 'Competitor',
+        founded: competitor.founded ?? '-',
+        funding: competitor.funding ?? '-',
+        pricing: competitor.pricing ?? '-',
+        focus: competitor.focus ?? '-',
+        threat: competitor.threat_level ?? 'Medium',
+      }))
+    : [];
+
+  const marketGaps = market?.market_gaps?.length ? market.market_gaps : [];
+
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-[#F0F0F0] flex flex-col font-sans pb-12">
       <GlobalNavbar />
 
       <main className="flex-1 w-full max-w-[1400px] mx-auto px-6 py-8">
-        <h1 className="text-3xl font-black text-white tracking-tight mb-8">Market Research — EduReach AI</h1>
+        <h1 className="text-3xl font-black text-white tracking-tight mb-8">
+          Market Research — {backendState?.startup_name || backendState?.idea || 'Live Startup Data'}
+        </h1>
 
         {/* Top 3 Metric Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           <div className="bg-[#111118] border-2 border-[#111118] p-6 hover:border-[#6C47FF] transition-colors flex flex-col">
             <div className="text-xs font-bold text-[#888899] uppercase tracking-widest mb-2">Total Addressable Market (TAM)</div>
-            <div className="text-4xl font-black text-[#00D4AA] tracking-tight mb-4">$4.2B</div>
+          <div className="text-4xl font-black text-[#00D4AA] tracking-tight mb-4">{market?.tam ?? 'No market data yet'}</div>
             <div className="mt-auto pt-4 border-t border-[#0A0A0F] text-xs font-bold text-[#888899]">
-              Source: RedSeer EdTech Report 2027
+              Source: {market?.tam_source ?? 'Backend market intelligence'}
             </div>
           </div>
           <div className="bg-[#111118] border-2 border-[#111118] p-6 hover:border-[#6C47FF] transition-colors flex flex-col">
             <div className="text-xs font-bold text-[#888899] uppercase tracking-widest mb-2">Serviceable Available Market (SAM)</div>
-            <div className="text-4xl font-black text-[#6C47FF] tracking-tight mb-4">$820M</div>
+          <div className="text-4xl font-black text-[#6C47FF] tracking-tight mb-4">{market?.sam ?? 'No market data yet'}</div>
             <div className="mt-auto pt-4 border-t border-[#0A0A0F] text-xs font-bold text-[#888899]">
-              Source: Tier 2/3 BPS Penetration Data
+              Source: {market?.raw_search_results?.length ? `${market.raw_search_results.length} live result(s)` : 'Search-backed synthesis'}
             </div>
           </div>
           <div className="bg-[#111118] border-2 border-[#111118] p-6 hover:border-[#6C47FF] transition-colors flex flex-col">
             <div className="text-xs font-bold text-[#888899] uppercase tracking-widest mb-2">Serviceable Obtainable Market (SOM)</div>
-            <div className="text-4xl font-black text-white tracking-tight mb-4">$41M</div>
+          <div className="text-4xl font-black text-white tracking-tight mb-4">{market?.som ?? 'No market data yet'}</div>
             <div className="mt-auto pt-4 border-t border-[#0A0A0F] text-xs font-bold text-[#888899]">
-              Source: 5% Capture of SAM Yr 3
+              Source: Backend model output
             </div>
           </div>
         </div>
@@ -64,7 +93,7 @@ export default function MarketResearch() {
                 </tr>
               </thead>
               <tbody>
-                {competitors.map((c, i) => (
+                {competitors.length ? competitors.map((c, i) => (
                   <tr key={i} className="border-b border-[#0A0A0F] hover:bg-[#0A0A0F]/50 transition-colors">
                     <td className="px-6 py-4 font-bold text-white">{c.name}</td>
                     <td className="px-6 py-4 text-[#888899] font-mono">{c.founded}</td>
@@ -81,7 +110,11 @@ export default function MarketResearch() {
                       </span>
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td className="px-6 py-6 text-[#888899]" colSpan={6}>No competitor data yet.</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -91,24 +124,12 @@ export default function MarketResearch() {
         <div className="mb-10 w-full border-2 border-[#111118] bg-[#111118] p-6">
           <h2 className="text-lg font-black text-white uppercase tracking-widest mb-6">Market Gap Analysis</h2>
           <div className="flex flex-col gap-4">
-            <div className="border-l-4 border-[#6C47FF] bg-[#0A0A0F] p-5">
-              <h4 className="font-bold text-[#F0F0F0] mb-2">1. The Vernacular Vacuum</h4>
-              <p className="text-sm text-[#888899] leading-relaxed">
-                92% of premium EdTech content is English-first. Tier 2-3 students require true bilingual learning (not just dubbed videos). Evidence: Doubtnut's rapid rise indicates massive demand for local language problem solving.
-              </p>
-            </div>
-            <div className="border-l-4 border-[#00D4AA] bg-[#0A0A0F] p-5">
-              <h4 className="font-bold text-[#F0F0F0] mb-2">2. B2B SaaS for Budget Private Schools</h4>
-              <p className="text-sm text-[#888899] leading-relaxed">
-                Over 400,000 Budget Private Schools (BPS) in India lack basic digital infrastructure. They cannot afford heavy ERPs like Teachmint. A lightweight, WhatsApp-integrated SaaS has zero direct competitors in the sub-₹10k/year segment.
-              </p>
-            </div>
-            <div className="border-l-4 border-[#6C47FF] bg-[#0A0A0F] p-5">
-              <h4 className="font-bold text-[#F0F0F0] mb-2">3. Asynchronous Low-Bandwidth Delivery</h4>
-              <p className="text-sm text-[#888899] leading-relaxed">
-                Live classes (Vedantu model) fail on 3G/unstable 4G networks common in target regions. Gap exists for AI-compressed, offline-first sync architecture.
-              </p>
-            </div>
+            {marketGaps.length ? marketGaps.map((gap, i) => (
+              <div key={i} className={`border-l-4 ${i % 2 === 0 ? 'border-[#6C47FF]' : 'border-[#00D4AA]'} bg-[#0A0A0F] p-5`}>
+                <h4 className="font-bold text-[#F0F0F0] mb-2">{i + 1}. Market Gap</h4>
+                <p className="text-sm text-[#888899] leading-relaxed">{gap}</p>
+              </div>
+            )) : <div className="text-[#888899]">No market gaps captured yet.</div>}
           </div>
         </div>
 
@@ -116,11 +137,12 @@ export default function MarketResearch() {
         <div>
           <h4 className="text-xs font-bold text-[#888899] uppercase tracking-widest mb-3">Cited Sources</h4>
           <div className="flex flex-wrap gap-3">
-            {['redseer.com/reports/edtech-2027', 'kpmg.com/in/education', 'udiseplus.gov.in'].map((url, i) => (
-              <a key={i} href="#" className="px-3 py-1.5 bg-[#111118] border border-[#111118] hover:border-[#6C47FF] text-[#6C47FF] text-xs font-mono transition-colors flex items-center gap-2">
+            {(market?.raw_search_results?.length ? market.raw_search_results.slice(0, 3) : []).map((url, i) => (
+              <span key={i} className="px-3 py-1.5 bg-[#111118] border border-[#111118] text-[#6C47FF] text-xs font-mono transition-colors flex items-center gap-2">
                 {url} <ExternalLink className="w-3 h-3" />
-              </a>
+              </span>
             ))}
+            {!market?.raw_search_results?.length && <span className="text-[#888899]">No source snippets yet.</span>}
           </div>
         </div>
 

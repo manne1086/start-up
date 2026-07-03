@@ -60,17 +60,17 @@ export default function Settings() {
                 <div className="flex flex-col md:flex-row gap-6">
                   <div className="flex-1">
                     <label className="block text-xs font-bold text-[#888899] uppercase tracking-widest mb-2">First Name</label>
-                    <input type="text" defaultValue="Alex" className="w-full bg-[#0A0A0F] border border-[#111118] text-[#F0F0F0] px-4 py-2 focus:outline-none focus:border-[#6C47FF] transition-colors" />
+                    <input type="text" placeholder="Enter first name" className="w-full bg-[#0A0A0F] border border-[#111118] text-[#F0F0F0] px-4 py-2 focus:outline-none focus:border-[#6C47FF] transition-colors" />
                   </div>
                   <div className="flex-1">
                     <label className="block text-xs font-bold text-[#888899] uppercase tracking-widest mb-2">Last Name</label>
-                    <input type="text" defaultValue="Founder" className="w-full bg-[#0A0A0F] border border-[#111118] text-[#F0F0F0] px-4 py-2 focus:outline-none focus:border-[#6C47FF] transition-colors" />
+                    <input type="text" placeholder="Enter last name" className="w-full bg-[#0A0A0F] border border-[#111118] text-[#F0F0F0] px-4 py-2 focus:outline-none focus:border-[#6C47FF] transition-colors" />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-[#888899] uppercase tracking-widest mb-2">Email Address</label>
-                  <input type="email" defaultValue="alex@startup.com" className="w-full bg-[#0A0A0F] border border-[#111118] text-[#F0F0F0] px-4 py-2 focus:outline-none focus:border-[#6C47FF] transition-colors" disabled />
+                    <input type="email" placeholder="Account email" className="w-full bg-[#0A0A0F] border border-[#111118] text-[#F0F0F0] px-4 py-2 focus:outline-none focus:border-[#6C47FF] transition-colors" disabled />
                 </div>
               </div>
               <div className="p-6 border-t border-[#0A0A0F] flex justify-end">
@@ -104,13 +104,13 @@ export default function Settings() {
                       <td className="py-4 font-bold text-[#F0F0F0]">Production Sync</td>
                       <td className="py-4">
                         <div className="flex items-center gap-2 font-mono text-[#888899] bg-[#0A0A0F] px-2 py-1 border border-[#111118] w-fit">
-                          {showKey ? 'vf_live_9x8f...4k2m' : '••••••••••••••••'}
+                          {showKey ? 'vf_live_placeholder_key' : '••••••••••••••••'}
                           <button onClick={() => setShowKey(!showKey)} className="hover:text-white transition-colors">
                             {showKey ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                           </button>
                         </div>
                       </td>
-                      <td className="py-4 text-[#888899]">2 hours ago</td>
+                        <td className="py-4 text-[#888899]">Recently</td>
                       <td className="py-4">
                         <span className="px-2 py-1 bg-[#00D4AA]/10 text-[#00D4AA] text-[10px] font-black uppercase border border-[#00D4AA]/30">Active</span>
                       </td>
@@ -131,7 +131,7 @@ export default function Settings() {
                 <div className="p-6 border-2 border-[#6C47FF] bg-[#6C47FF]/5 flex flex-col sm:flex-row justify-between items-center gap-6 shadow-[4px_4px_0px_#6C47FF]">
                   <div>
                     <h3 className="text-xl font-black text-white mb-2">Free Plan</h3>
-                    <p className="text-sm text-[#888899]">3 Projects / month limit</p>
+                    <p className="text-sm text-[#888899]">Usage-based access controls are configured by your plan.</p>
                   </div>
                   <button className="w-full sm:w-auto px-6 py-3 bg-[#6C47FF] text-white font-bold text-sm hover:bg-[#111118] border-2 border-[#6C47FF] transition-colors flex items-center justify-center gap-2">
                     Upgrade to Pro <ArrowRight className="w-4 h-4" />
@@ -141,7 +141,7 @@ export default function Settings() {
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-bold text-[#F0F0F0]">Usage this month</span>
-                    <span className="text-sm font-bold text-[#888899]">2 of 3 projects</span>
+                    <span className="text-sm font-bold text-[#888899]">Tracked from your backend usage</span>
                   </div>
                   <div className="w-full h-2 bg-[#0A0A0F]">
                     <div className="h-full bg-[#00D4AA] w-[66%]"></div>

@@ -4,7 +4,13 @@ from services.tavily_client import search
 
 
 async def market_research(state: StartupState) -> StartupState:
-    results = await search(state.idea)
+    seed_queries = [
+        state.idea,
+        f"{state.idea} market size competitors pricing",
+        f"{state.idea} trends customer pain points regulations",
+    ]
+    search_runs = [await search(query, max_results=4) for query in seed_queries]
+    results = [item for batch in search_runs for item in batch]
     research_blob = "\n".join(
         f"- {item['title']}: {item['content']} ({item['url']})" for item in results
     )
@@ -13,11 +19,12 @@ You are the VentureForge market research agent.
 Idea: {state.idea}
 Startup name: {state.startup_name}
 
-Using the search evidence below, produce a concise market research summary.
+Using the search evidence below, produce a concise market research summary with concrete, decision-useful details.
 Evidence:
 {research_blob}
 
 Return structured market intelligence with realistic TAM/SAM/SOM strings, 3 competitors, and 3 market gaps.
+Make the TAM/SAM/SOM consistent with the evidence and mention any uncertainty in the source field.
 """
     try:
         model = await structured_reasoning(prompt, MarketData, state=state)
@@ -34,18 +41,22 @@ Return structured market intelligence with realistic TAM/SAM/SOM strings, 3 comp
                     funding="$12M",
                     pricing="$99/mo",
                     focus="SMB AI tools",
-                    threat_level="Medium",
-                )
+                threat_level="Medium",
+            )
             ],
-            market_gaps=["Workflow automation", "Localized onboarding", "Distribution partnerships"],
-            raw_search_results=[item["content"] for item in results],
+            market_gaps=[
+                "Workflow automation",
+                "Localized onboarding",
+                "Distribution partnerships",
+            ],
+            raw_search_results=[f"{item['title']}: {item['content']}" for item in results],
         )
     state.market = model
     state.completed_steps.append("market_research")
     state.agent_logs.append(
         AgentLog(
             agent="Market Research",
-            message=f"Market analysis generated from {len(results)} search result(s).",
+            message=f"Market analysis generated from {len(results)} Tavily result(s) across {len(seed_queries)} query angles.",
             status="success",
         )
     )

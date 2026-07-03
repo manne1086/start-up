@@ -2,22 +2,14 @@ import { ArrowRight, BarChart3, PieChart, Scale, Presentation, Cpu, RefreshCw, R
 import { useEffect, useState } from 'react';
 import { useGeneration } from '../generation';
 import { useRouter } from '../router';
+import NeuralBrainBackground from './NeuralBrainBackground';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
-
-const features = [
-  { name: 'Market Analysis', desc: 'Identify TAM, competitors, and gaps', icon: BarChart3 },
-  { name: 'Financial Model', desc: '5-year DCF, P&L, and KPIs', icon: PieChart },
-  { name: 'Legal Compliance', desc: 'Entity matching & regulations', icon: Scale },
-  { name: 'Pitch Deck', desc: '12-slide investor-ready presentation', icon: Presentation },
-  { name: 'MVP Architecture', desc: 'Tech stack & engineering roadmap', icon: Cpu },
-  { name: 'Pivot Simulation', desc: 'Stress-test against adversarial agents', icon: RefreshCw },
-];
 
 export default function Landing() {
   const { navigate } = useRouter();
   const { startGeneration, status, backendState, error } = useGeneration();
-  const [idea, setIdea] = useState('An AI tutoring app for rural students in India');
+  const [idea, setIdea] = useState('');
   const [authState, setAuthState] = useState<{
     loading: boolean;
     authenticated: boolean;
@@ -64,6 +56,12 @@ export default function Landing() {
     void refreshAuth();
   }, []);
 
+  useEffect(() => {
+    if (!authState.loading && authState.authenticated) {
+      navigate('home');
+    }
+  }, [authState.loading, authState.authenticated, navigate]);
+
   const handleLogout = async () => {
     await fetch(`${API_URL}/api/auth/logout`, {
       method: 'POST',
@@ -74,6 +72,7 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-[#F0F0F0] flex flex-col font-sans selection:bg-[#6C47FF] selection:text-white">
+      <NeuralBrainBackground />
       <nav className="w-full h-[64px] px-6 flex justify-between items-center z-10 sticky top-0 bg-[#0A0A0F]/90 backdrop-blur-sm">
         <div className="flex items-center gap-3">
           <div className="bg-[#6C47FF] p-1.5 border-2 border-[#0A0A0F] shadow-[2px_2px_0px_#00D4AA]">
@@ -105,7 +104,7 @@ export default function Landing() {
             </button>
           )}
           <button
-            onClick={handleGenerate}
+            onClick={() => navigate('home')}
             className="text-[#6C47FF] hover:text-[#00D4AA] transition-colors flex items-center gap-1"
           >
             Launch Idea <ArrowRight className="w-4 h-4" />
@@ -122,16 +121,16 @@ export default function Landing() {
           and pitch deck - autonomously.
         </p>
 
-        <div className="w-full max-w-4xl relative group">
+        <div className="w-full max-w-5xl relative group">
           <textarea
             value={idea}
             onChange={(e) => setIdea(e.target.value)}
-            placeholder="Describe your startup idea... e.g. An AI tutoring app for rural students in India"
-            className="w-full h-[90px] bg-[#111118] border-2 border-[#6C47FF] text-[#F0F0F0] placeholder-[#888899] px-6 py-4 focus:outline-none focus:shadow-[6px_6px_0px_#00D4AA] transition-all resize-none text-lg font-medium shadow-[4px_4px_0px_#6C47FF]"
+            placeholder="Describe your startup idea..."
+            className="w-full h-[72px] bg-[#111118] border-2 border-[#6C47FF] text-[#F0F0F0] placeholder-[#888899] px-6 py-3.5 focus:outline-none focus:shadow-[6px_6px_0px_#00D4AA] transition-all resize-none text-lg font-medium shadow-[4px_4px_0px_#6C47FF]"
           />
 
           <div className="flex flex-wrap justify-center gap-4 mt-6">
-            {['HealthTech SaaS', 'D2C Fintech', 'EdTech B2B'].map((tag) => (
+              {['Research-led', 'SaaS', 'AI-native'].map((tag) => (
               <button
                 key={tag}
                 className="border-2 border-[#6C47FF]/30 bg-[#111118] px-5 py-1.5 text-sm font-bold text-[#888899] hover:border-[#00D4AA] hover:text-[#00D4AA] transition-colors shadow-[2px_2px_0px_transparent] hover:shadow-[2px_2px_0px_#00D4AA]"
@@ -158,23 +157,9 @@ export default function Landing() {
 
         <section className="w-full max-w-4xl mt-24 mb-32">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((f, i) => {
-              const Icon = f.icon;
-              return (
-                <div
-                  key={i}
-                  className="border-2 border-[#111118] bg-[#111118] p-6 hover:-translate-y-1 hover:shadow-[4px_4px_0px_#6C47FF] hover:border-[#6C47FF] transition-all flex flex-col items-start gap-4 cursor-default text-left"
-                >
-                  <div className="p-2 border-2 border-[#6C47FF]/30 bg-[#0A0A0F] text-[#6C47FF]">
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-[#F0F0F0] mb-1">{f.name}</h3>
-                    <p className="text-sm text-[#888899]">{f.desc}</p>
-                  </div>
-                </div>
-              );
-            })}
+            <div className="col-span-full border-2 border-[#111118] bg-[#111118] p-6 text-left text-[#888899]">
+              Generate a startup package to populate market research, financials, compliance, pitch, MVP, and pivot modules here.
+            </div>
           </div>
         </section>
       </main>

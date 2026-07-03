@@ -27,12 +27,41 @@ class RunRecord:
 RUNS: dict[str, RunRecord] = {}
 
 
+def _humanize_node_name(node_name: str) -> str:
+    return {
+        "orchestrator": "Orchestrator",
+        "market_research": "Market Research",
+        "validator_market": "Market Validation",
+        "business_planning": "Business Planning",
+        "financial_engineering": "Financial Engineering",
+        "validator_financial": "Financial Validation",
+        "legal_compliance": "Legal Compliance",
+        "pitch_deck": "Pitch Deck",
+        "mvp_architecture": "MVP Architecture",
+        "pivot_simulator": "Pivot Simulator",
+    }.get(node_name, node_name.replace("_", " ").title())
+
+
 async def emit(thread_id: str, event_type: str, payload: dict[str, Any]) -> None:
     await push_event(thread_id, {"type": event_type, "payload": payload})
 
 
 async def emit_log(thread_id: str, log: AgentLog) -> None:
     await emit(thread_id, "log", log.model_dump(mode="json"))
+
+
+async def trace_node_start(thread_id: str, state: StartupState, node_name: str) -> None:
+    label = _humanize_node_name(node_name)
+    log = AgentLog(agent=label, message=f"Calling {label} agent.", status="info")
+    state.agent_logs.append(log)
+    await emit_log(thread_id, log)
+
+
+async def trace_node_complete(thread_id: str, state: StartupState, node_name: str) -> None:
+    label = _humanize_node_name(node_name)
+    log = AgentLog(agent=label, message=f"{label} agent completed.", status="success")
+    state.agent_logs.append(log)
+    await emit_log(thread_id, log)
 
 
 async def run_until_pause(thread_id: str) -> None:
@@ -48,9 +77,9 @@ async def run_until_pause(thread_id: str) -> None:
             ("business_planning", business_planning),
         ]:
             await emit(thread_id, "step", {"node": node_name, "status": "started"})
+            await trace_node_start(thread_id, state, node_name)
             state = await node(state)
-            for log in state.agent_logs[-1:]:
-                await emit_log(thread_id, log)
+            await trace_node_complete(thread_id, state, node_name)
             await emit(thread_id, "step", {"node": node_name, "status": "completed"})
 
         state.awaiting_human_review = True
@@ -79,9 +108,9 @@ async def run_after_resume(thread_id: str) -> None:
             ("pivot_simulator", pivot_simulator),
         ]:
             await emit(thread_id, "step", {"node": node_name, "status": "started"})
+            await trace_node_start(thread_id, state, node_name)
             state = await node(state)
-            for log in state.agent_logs[-1:]:
-                await emit_log(thread_id, log)
+            await trace_node_complete(thread_id, state, node_name)
             await emit(thread_id, "step", {"node": node_name, "status": "completed"})
 
         state.status = "complete"

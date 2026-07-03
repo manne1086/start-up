@@ -14,12 +14,14 @@ import MVPArchitecture from './components/MVPArchitecture';
 import Settings from './components/Settings';
 import ErrorState from './components/ErrorState';
 import ComponentLibrary from './components/ComponentLibrary';
+import Home from './components/Home';
 
 function AppContent() {
   const { screen } = useRouter();
 
   switch (screen) {
     case 'landing': return <Landing />;
+    case 'home': return <Home />;
     case 'projects': return <Projects />;
     case 'progress': return <AgentProgress />;
     case 'review': return <HumanReview />;

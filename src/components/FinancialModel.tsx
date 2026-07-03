@@ -9,19 +9,43 @@ import {
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import GlobalNavbar from './GlobalNavbar';
+import { useGeneration } from '../generation';
 import { useRouter } from '../router';
-
-const chartData = [
-  { year: 'Year 1', revenue: 48, gp: 35, ebitda: -15 },
-  { year: 'Year 2', revenue: 120, gp: 95, ebitda: 10 },
-  { year: 'Year 3', revenue: 350, gp: 290, ebitda: 120 },
-  { year: 'Year 4', revenue: 680, gp: 580, ebitda: 280 },
-  { year: 'Year 5', revenue: 920, gp: 800, ebitda: 450 },
-];
 
 export default function FinancialModel() {
   const { navigate } = useRouter();
+  const { backendState } = useGeneration();
   const [showFormula, setShowFormula] = useState(false);
+
+  const financials = backendState?.financials as
+    | {
+        projections?: Array<{
+          year?: number;
+          revenue?: number;
+          cogs?: number;
+          gross_profit?: number;
+          ebitda?: number;
+          fcf?: number;
+        }>;
+        npv?: number;
+        irr?: number;
+        payback_months?: number;
+        fcf_formula?: string;
+      }
+    | null
+    | undefined;
+
+  const chartData = financials?.projections?.length
+    ? financials.projections.map((row) => ({
+        year: `Year ${row.year ?? ''}`,
+        revenue: Number(row.revenue ?? 0) / 100000,
+        gp: Number(row.gross_profit ?? 0) / 100000,
+        ebitda: Number(row.ebitda ?? 0) / 100000,
+      }))
+    : [];
+
+  const assumptions = financials?.projections?.[0] ?? null;
+  const formula = financials?.fcf_formula ?? 'No financial model generated yet.';
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-[#F0F0F0] flex flex-col font-sans pb-12">
@@ -35,11 +59,15 @@ export default function FinancialModel() {
             <div className="flex items-center gap-2 text-xs font-bold text-[#888899] uppercase tracking-widest mb-2">
               <span className="hover:text-white cursor-pointer transition-colors" onClick={() => navigate('projects')}>Projects</span>
               <ChevronRight className="w-3 h-3" />
-              <span className="hover:text-white cursor-pointer transition-colors" onClick={() => navigate('results')}>EduReach AI</span>
+              <span className="hover:text-white cursor-pointer transition-colors" onClick={() => navigate('results')}>
+                {backendState?.startup_name || backendState?.idea || 'Startup'}
+              </span>
               <ChevronRight className="w-3 h-3" />
               <span className="text-[#6C47FF]">Financial Model</span>
             </div>
-            <h1 className="text-3xl font-black text-white tracking-tight">5-Year DCF Model</h1>
+            <h1 className="text-3xl font-black text-white tracking-tight">
+              {backendState?.startup_name || backendState?.idea || 'Live'} 5-Year DCF Model
+            </h1>
           </div>
           
           <div className="flex items-center gap-3">
@@ -55,10 +83,10 @@ export default function FinancialModel() {
         {/* 4 Stat Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
-            { label: 'Year 1 Revenue', value: '₹48L', trend: '+12%' },
-            { label: 'IRR', value: '34%', trend: '+2%' },
-            { label: 'NPV', value: '₹3.1Cr', trend: '+₹12L' },
-            { label: 'Break-even', value: 'Month 22', trend: '-2 mo' },
+            { label: 'Year 1 Revenue', value: chartData[0] ? `₹${chartData[0].revenue}L` : 'Pending', trend: '+12%' },
+            { label: 'IRR', value: financials?.irr ? `${financials.irr.toFixed(0)}%` : 'Pending', trend: '+2%' },
+            { label: 'NPV', value: financials?.npv ? `₹${financials.npv.toFixed(1)}L` : 'Pending', trend: '+₹12L' },
+            { label: 'Break-even', value: financials?.payback_months ? `Month ${financials.payback_months}` : 'Pending', trend: '-2 mo' },
           ].map((stat, i) => (
             <div key={i} className="bg-[#111118] border-2 border-[#111118] p-5 flex flex-col justify-between hover:border-[#6C47FF] transition-colors">
               <div className="text-xs font-bold text-[#888899] uppercase tracking-widest mb-2">{stat.label}</div>
@@ -134,9 +162,9 @@ export default function FinancialModel() {
                     itemStyle={{ color: '#00D4AA' }}
                   />
                   <Legend iconType="square" wrapperStyle={{ fontSize: '12px', color: '#888899' }} />
-                  <Area type="monotone" dataKey="revenue" name="Revenue" stroke="#6C47FF" fillOpacity={1} fill="url(#colorRev)" strokeWidth={2} />
-                  <Area type="monotone" dataKey="gp" name="Gross Profit" stroke="#00D4AA" fillOpacity={1} fill="url(#colorGP)" strokeWidth={2} />
-                  <Area type="monotone" dataKey="ebitda" name="EBITDA" stroke="#888899" fillOpacity={1} fill="url(#colorEBITDA)" strokeWidth={2} />
+                  {chartData.length > 0 && <Area type="monotone" dataKey="revenue" name="Revenue" stroke="#6C47FF" fillOpacity={1} fill="url(#colorRev)" strokeWidth={2} />}
+                  {chartData.length > 0 && <Area type="monotone" dataKey="gp" name="Gross Profit" stroke="#00D4AA" fillOpacity={1} fill="url(#colorGP)" strokeWidth={2} />}
+                  {chartData.length > 0 && <Area type="monotone" dataKey="ebitda" name="EBITDA" stroke="#888899" fillOpacity={1} fill="url(#colorEBITDA)" strokeWidth={2} />}
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -180,7 +208,7 @@ export default function FinancialModel() {
               
               {showFormula && (
                 <div className="mt-4 p-4 bg-[#0A0A0F] border border-[#111118]">
-                  <code className="text-xs font-mono text-[#00D4AA] block mb-2">FCF = EBIT × (1 - Tax Rate) + D&A - CapEx - ΔNWC</code>
+                  <code className="text-xs font-mono text-[#00D4AA] block mb-2">{formula}</code>
                   <p className="text-sm text-[#888899] leading-relaxed font-sans">
                     Free Cash Flow (FCF) is calculated by taking earnings before interest and taxes (EBIT), subtracting the assumed 25% corporate tax rate, adding back non-cash depreciation & amortization, and subtracting capital expenditures and changes in net working capital.
                   </p>

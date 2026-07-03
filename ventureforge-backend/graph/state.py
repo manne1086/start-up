@@ -38,6 +38,13 @@ class BusinessPlan(BaseModel):
     pricing: str
     gtm_strategy: str
     value_proposition: str
+    key_risks: list[str] = []
+    mitigation_steps: list[str] = []
+
+
+class StartupIdentity(BaseModel):
+    startup_name: str
+    industry: str
 
 
 class FinancialAssumptions(BaseModel):

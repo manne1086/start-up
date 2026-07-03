@@ -14,24 +14,17 @@ import {
   Link as LinkIcon,
   Globe,
 } from 'lucide-react';
+import JSZip from 'jszip';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import GlobalNavbar from './GlobalNavbar';
 import { useGeneration } from '../generation';
 import { useRouter } from '../router';
 
-const fallbackData = [
-  { year: 'Yr 1', revenue: 48, gp: 35 },
-  { year: 'Yr 2', revenue: 120, gp: 95 },
-  { year: 'Yr 3', revenue: 350, gp: 290 },
-  { year: 'Yr 4', revenue: 680, gp: 580 },
-  { year: 'Yr 5', revenue: 920, gp: 800 },
-];
-
 export default function ResultsDashboard() {
   const { navigate } = useRouter();
   const { backendState } = useGeneration();
 
-  const ideaName = backendState?.startup_name || backendState?.idea?.toString()?.slice(0, 32) || 'VentureForge Startup';
+  const ideaName = backendState?.startup_name || backendState?.idea?.toString()?.slice(0, 32) || 'Startup';
   const market = backendState?.market as Record<string, unknown> | null | undefined;
   const financials = backendState?.financials as { projections?: Array<Record<string, unknown>>; npv?: number; irr?: number; payback_months?: number } | null | undefined;
   const legal = backendState?.legal as Record<string, unknown> | null | undefined;
@@ -39,13 +32,91 @@ export default function ResultsDashboard() {
   const mvp = backendState?.mvp as { recommended_stack?: Array<Record<string, unknown>>; estimated_weeks?: number; team_size?: number; estimated_cost_inr?: string } | null | undefined;
   const pivots = backendState?.pivots ?? [];
 
+  const safeFilename = (name: string) => name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'ventureforge-package';
+
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+    const shareTitle = `${ideaName} - VentureForge`;
+    if (navigator.share) {
+      await navigator.share({ title: shareTitle, text: 'VentureForge startup package', url: shareUrl });
+      return;
+    }
+    await navigator.clipboard.writeText(shareUrl);
+    alert('Link copied to clipboard.');
+  };
+
+  const handleCopyLink = async () => {
+    await navigator.clipboard.writeText(window.location.href);
+    alert('Link copied to clipboard.');
+  };
+
+  const handleDownloadZip = async () => {
+    const zip = new JSZip();
+    const state = backendState ?? {};
+    zip.file('startup-state.json', JSON.stringify(state, null, 2));
+    zip.file(
+      'summary.md',
+      `# ${ideaName}\n\n` +
+        `Market TAM: ${market?.tam?.toString() ?? 'N/A'}\n` +
+        `Financial NPV: ${financials?.npv ? financials.npv.toFixed(2) : 'N/A'}\n` +
+        `Legal: ${legal?.entity_recommendation?.toString() ?? 'N/A'}\n`
+    );
+    zip.file('market-research.json', JSON.stringify(market ?? {}, null, 2));
+    zip.file('financial-model.json', JSON.stringify(financials ?? {}, null, 2));
+    zip.file('legal-report.json', JSON.stringify(legal ?? {}, null, 2));
+    zip.file('pitch-deck.json', JSON.stringify(pitchDeck ?? {}, null, 2));
+    zip.file('mvp-architecture.json', JSON.stringify(mvp ?? {}, null, 2));
+    zip.file('pivots.json', JSON.stringify(pivots ?? [], null, 2));
+
+    const blob = await zip.generateAsync({ type: 'blob' });
+    downloadBlob(blob, `${safeFilename(ideaName)}.zip`);
+  };
+
+  const handleExportPdf = () => {
+    window.print();
+  };
+
+  const handleExcelExport = () => {
+    const rows = financials?.projections?.length
+      ? financials.projections
+      : [];
+    const csv = [
+      ['Year', 'Revenue', 'COGS', 'Gross Profit', 'EBITDA', 'FCF'].join(','),
+      ...rows.map((row) =>
+        [
+          row.year ?? '',
+          row.revenue ?? '',
+          row.cogs ?? '',
+          row.gross_profit ?? row.gp ?? '',
+          row.ebitda ?? '',
+          row.fcf ?? '',
+        ].join(',')
+      ),
+    ].join('\n');
+    downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), `${safeFilename(ideaName)}-financials.csv`);
+  };
+
+  const handleDrivePush = async () => {
+    await handleCopyLink();
+    alert('Drive export is not configured yet. The share link was copied instead.');
+  };
+
   const chartData = financials?.projections?.length
     ? financials.projections.map((row) => ({
         year: `Yr ${row.year ?? ''}`,
         revenue: Number(row.revenue ?? 0) / 100000,
         gp: Number(row.gross_profit ?? row.gp ?? 0) / 100000,
       }))
-    : fallbackData;
+    : [];
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-[#F0F0F0] flex flex-col font-sans pb-12">
@@ -76,10 +147,10 @@ export default function ResultsDashboard() {
             </h2>
           </div>
           <div className="flex items-center gap-3">
-            <button className="px-5 py-2.5 bg-transparent border-2 border-white/20 text-white font-bold text-sm hover:border-white transition-colors flex items-center gap-2">
+            <button onClick={handleShare} className="px-5 py-2.5 bg-transparent border-2 border-white/20 text-white font-bold text-sm hover:border-white transition-colors flex items-center gap-2">
               <Share2 className="w-4 h-4" /> Share Link
             </button>
-            <button className="px-5 py-2.5 bg-[#6C47FF] border-2 border-[#6C47FF] text-white font-bold text-sm hover:bg-[#111118] hover:text-[#6C47FF] hover:shadow-[4px_4px_0px_#00D4AA] transition-all flex items-center gap-2">
+            <button onClick={handleDownloadZip} className="px-5 py-2.5 bg-[#6C47FF] border-2 border-[#6C47FF] text-white font-bold text-sm hover:bg-[#111118] hover:text-[#6C47FF] hover:shadow-[4px_4px_0px_#00D4AA] transition-all flex items-center gap-2">
               <Download className="w-4 h-4" /> Download All (.zip)
             </button>
           </div>
@@ -99,7 +170,7 @@ export default function ResultsDashboard() {
               </div>
               <div className="mb-6">
                 <div className="text-4xl font-black text-[#00D4AA] tracking-tight mb-1">
-                  {market?.tam?.toString() ?? 'TAM pending'}
+                  {market?.tam?.toString() ?? 'No market data yet'}
                 </div>
                 <div className="text-sm font-medium text-[#888899]">
                   {market?.tam_source?.toString() ?? 'Backend market intelligence'}
@@ -112,11 +183,7 @@ export default function ResultsDashboard() {
                         {comp.name?.toString() ?? 'Competitor'}
                       </span>
                     ))
-                  : ['Loading...', 'Loading...', 'Loading...'].map((comp) => (
-                      <span key={comp} className="px-2 py-1 bg-[#0A0A0F] border border-[#6C47FF]/30 text-[#888899] text-xs font-medium">
-                        {comp}
-                      </span>
-                    ))}
+                  : null}
               </div>
             </div>
 
@@ -135,8 +202,8 @@ export default function ResultsDashboard() {
                       <CartesianGrid strokeDasharray="3 3" stroke="#2A2A35" vertical={false} />
                       <XAxis dataKey="year" stroke="#888899" fontSize={10} tickLine={false} axisLine={false} />
                       <YAxis stroke="#888899" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `₹${v}L`} />
-                      <Line type="monotone" dataKey="revenue" stroke="#6C47FF" strokeWidth={2} dot={false} />
-                      <Line type="monotone" dataKey="gp" stroke="#00D4AA" strokeWidth={2} dot={false} />
+                      {chartData.length > 0 && <Line type="monotone" dataKey="revenue" stroke="#6C47FF" strokeWidth={2} dot={false} />}
+                      {chartData.length > 0 && <Line type="monotone" dataKey="gp" stroke="#00D4AA" strokeWidth={2} dot={false} />}
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -159,7 +226,7 @@ export default function ResultsDashboard() {
                     </div>
                   </div>
                   <div className="flex gap-3">
-                    <button className="flex-1 px-4 py-2 border-2 border-[#111118] text-[#888899] font-bold text-xs hover:border-[#00D4AA] hover:text-[#00D4AA] transition-colors flex items-center justify-center gap-2">
+                    <button onClick={handleExcelExport} className="flex-1 px-4 py-2 border-2 border-[#111118] text-[#888899] font-bold text-xs hover:border-[#00D4AA] hover:text-[#00D4AA] transition-colors flex items-center justify-center gap-2">
                       <Download className="w-3 h-3" /> Download Excel
                     </button>
                     <button
@@ -199,7 +266,7 @@ export default function ResultsDashboard() {
                 </div>
               </div>
 
-              <button className="text-[#6C47FF] font-bold text-xs flex items-center gap-1 hover:text-[#00D4AA] transition-colors w-fit">
+              <button onClick={() => navigate('legal')} className="text-[#6C47FF] font-bold text-xs flex items-center gap-1 hover:text-[#00D4AA] transition-colors w-fit">
                 Download NDA <ArrowRight className="w-3 h-3" />
               </button>
             </div>
@@ -227,7 +294,7 @@ export default function ResultsDashboard() {
               </div>
 
               <div className="flex gap-2">
-                <button className="flex-1 px-3 py-2 border-2 border-[#111118] text-[#888899] font-bold text-xs hover:border-[#00D4AA] hover:text-[#00D4AA] transition-colors flex items-center justify-center gap-1">
+                <button onClick={() => navigate('pitch')} className="flex-1 px-3 py-2 border-2 border-[#111118] text-[#888899] font-bold text-xs hover:border-[#00D4AA] hover:text-[#00D4AA] transition-colors flex items-center justify-center gap-1">
                   <Download className="w-3 h-3" /> .pptx
                 </button>
                 <button
@@ -262,7 +329,7 @@ export default function ResultsDashboard() {
                 >
                   View Architecture <ArrowRight className="w-3 h-3" />
                 </button>
-                <button className="w-full px-4 py-2 border-2 border-[#111118] text-[#888899] font-bold text-xs hover:border-white transition-colors flex items-center justify-center gap-2">
+                <button onClick={() => navigate('mvp')} className="w-full px-4 py-2 border-2 border-[#111118] text-[#888899] font-bold text-xs hover:border-white transition-colors flex items-center justify-center gap-2">
                   <Download className="w-3 h-3" /> Download Roadmap
                 </button>
               </div>
@@ -294,16 +361,16 @@ export default function ResultsDashboard() {
             <h3 className="text-sm font-bold text-[#F0F0F0] mb-6">Share this package</h3>
 
             <div className="flex flex-col gap-3">
-              <button className="w-full py-2.5 px-4 bg-[#0A0A0F] border border-[#111118] text-[#888899] hover:text-white hover:border-[#6C47FF] transition-all flex items-center gap-3 text-sm font-bold text-left">
+              <button onClick={handleCopyLink} className="w-full py-2.5 px-4 bg-[#0A0A0F] border border-[#111118] text-[#888899] hover:text-white hover:border-[#6C47FF] transition-all flex items-center gap-3 text-sm font-bold text-left">
                 <LinkIcon className="w-4 h-4" /> Copy Link
               </button>
-              <button className="w-full py-2.5 px-4 bg-[#0A0A0F] border border-[#111118] text-[#888899] hover:text-white hover:border-[#6C47FF] transition-all flex items-center gap-3 text-sm font-bold text-left">
+              <button onClick={() => navigate('landing')} className="w-full py-2.5 px-4 bg-[#0A0A0F] border border-[#111118] text-[#888899] hover:text-white hover:border-[#6C47FF] transition-all flex items-center gap-3 text-sm font-bold text-left">
                 <Mail className="w-4 h-4" /> Email Investor
               </button>
-              <button className="w-full py-2.5 px-4 bg-[#0A0A0F] border border-[#111118] text-[#888899] hover:text-white hover:border-[#6C47FF] transition-all flex items-center gap-3 text-sm font-bold text-left">
+              <button onClick={handleDrivePush} className="w-full py-2.5 px-4 bg-[#0A0A0F] border border-[#111118] text-[#888899] hover:text-white hover:border-[#6C47FF] transition-all flex items-center gap-3 text-sm font-bold text-left">
                 <Globe className="w-4 h-4" /> Push to Drive
               </button>
-              <button className="w-full py-2.5 px-4 bg-[#0A0A0F] border border-[#111118] text-[#888899] hover:text-white hover:border-[#6C47FF] transition-all flex items-center gap-3 text-sm font-bold text-left">
+              <button onClick={handleExportPdf} className="w-full py-2.5 px-4 bg-[#0A0A0F] border border-[#111118] text-[#888899] hover:text-white hover:border-[#6C47FF] transition-all flex items-center gap-3 text-sm font-bold text-left">
                 <FileArchive className="w-4 h-4" /> Export PDF
               </button>
             </div>

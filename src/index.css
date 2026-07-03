@@ -6,10 +6,19 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+html {
+  background:
+    radial-gradient(circle at top left, rgba(108, 71, 255, 0.18), transparent 32%),
+    radial-gradient(circle at top right, rgba(0, 212, 170, 0.14), transparent 28%),
+    radial-gradient(circle at bottom center, rgba(108, 71, 255, 0.10), transparent 35%),
+    #0A0A0F;
+}
+
 body {
   background-color: #0A0A0F;
   color: #F0F0F0;
   -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
 }
 
 /* Custom scrollbar for terminal/agent logs */
@@ -28,6 +37,46 @@ body {
   background: #00D4AA; 
 }
 
+.glow-violet {
+  box-shadow:
+    0 0 0 1px rgba(108, 71, 255, 0.35),
+    0 0 18px rgba(108, 71, 255, 0.42),
+    0 0 42px rgba(108, 71, 255, 0.22);
+}
+
+.glow-aqua {
+  box-shadow:
+    0 0 0 1px rgba(0, 212, 170, 0.28),
+    0 0 18px rgba(0, 212, 170, 0.36),
+    0 0 42px rgba(0, 212, 170, 0.18);
+}
+
+.glow-hot {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 0 24px rgba(255, 255, 255, 0.10),
+    0 0 60px rgba(108, 71, 255, 0.18);
+}
+
+.soft-glow {
+  filter: drop-shadow(0 0 10px rgba(108, 71, 255, 0.35)) drop-shadow(0 0 22px rgba(0, 212, 170, 0.18));
+}
+
+.neon-frame {
+  position: relative;
+}
+
+.neon-frame::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 1px rgba(108, 71, 255, 0.22),
+    0 0 24px rgba(108, 71, 255, 0.18);
+}
+
 /* Apply eclipse/ellipse shape to UI elements globally */
 button, 
 input, 
@@ -41,6 +90,7 @@ textarea,
 
 button {
   border-radius: 9999px !important;
+  transition: box-shadow 180ms ease, transform 180ms ease, filter 180ms ease;
 }
 
 span.border {
@@ -49,4 +99,10 @@ span.border {
 
 .border-b, .border-t, .border-l, .border-r {
   border-radius: 0 !important;
+}
+
+button:hover,
+a:hover,
+[role="button"]:hover {
+  filter: brightness(1.06);
 }

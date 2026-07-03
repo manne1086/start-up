@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 
-export type Screen = 'landing' | 'projects' | 'progress' | 'review' | 'results' | 'financials' | 'pivot' | 'market' | 'legal' | 'pitch' | 'mvp' | 'settings' | 'error' | 'components';
+export type Screen = 'landing' | 'home' | 'projects' | 'progress' | 'review' | 'results' | 'financials' | 'pivot' | 'market' | 'legal' | 'pitch' | 'mvp' | 'settings' | 'error' | 'components';
 
 interface RouterContextType {
   screen: Screen;

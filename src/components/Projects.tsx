@@ -1,15 +1,25 @@
 import { Plus, MoreHorizontal, ArrowRight, Folder } from 'lucide-react';
 import { useRouter } from '../router';
 import GlobalNavbar from './GlobalNavbar';
-
-const projects = [
-  { id: 1, name: 'EduReach AI', industry: 'EdTech', status: 'Complete', date: 'Oct 12', updated: '2 days ago', progress: null },
-  { id: 2, name: 'MedSync Pro', industry: 'HealthTech', status: 'Draft', date: 'Oct 14', updated: '1 day ago', progress: 'Step 3 of 6' },
-  { id: 3, name: 'FinFlow B2B', industry: 'FinTech', status: 'Failed', date: 'Oct 05', updated: '7 days ago', progress: null },
-];
+import { useGeneration } from '../generation';
 
 export default function Projects() {
   const { navigate } = useRouter();
+  const { backendState } = useGeneration();
+
+  const projects = backendState
+    ? [
+        {
+          id: backendState.thread_id ?? 'current',
+          name: backendState.startup_name || backendState.idea || 'Current startup',
+          industry: backendState.industry || 'Research-backed',
+          status: backendState.status === 'complete' ? 'Complete' : backendState.status === 'failed' ? 'Failed' : backendState.status === 'paused' ? 'Draft' : 'Running',
+          date: backendState.thread_id ? backendState.thread_id.slice(0, 8) : 'Live',
+          updated: backendState.agent_logs?.length ? `${backendState.agent_logs.length} agent events` : 'No events yet',
+          progress: backendState.completed_steps?.length ? `Step ${backendState.completed_steps.length} of 10` : null,
+        },
+      ]
+    : [];
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-[#F0F0F0] flex flex-col font-sans">
@@ -39,7 +49,7 @@ export default function Projects() {
 
         {/* Project Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {projects.map((p) => (
+          {projects.length ? projects.map((p) => (
             <div key={p.id} className="border-2 border-[#111118] bg-[#111118] p-6 hover:border-[#6C47FF] hover:shadow-[4px_4px_0px_#6C47FF] transition-all flex flex-col group">
               
               <div className="flex justify-between items-start mb-4">
@@ -85,7 +95,11 @@ export default function Projects() {
               </div>
 
             </div>
-          ))}
+          )) : (
+            <div className="col-span-full border-2 border-[#111118] bg-[#111118] p-8 text-[#888899]">
+              No project snapshots yet. Start a generation run and your live startup package will appear here.
+            </div>
+          )}
         </div>
 
       </main>
