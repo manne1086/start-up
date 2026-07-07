@@ -1,8 +1,10 @@
-import { Scale, ShieldAlert, CheckCircle2, Download, ArrowRight, FileText, Briefcase, Building } from 'lucide-react';
+import { Scale, ShieldAlert, CheckCircle2, Download, ArrowRight, FileText, Briefcase, Building, ChevronRight } from 'lucide-react';
 import { useGeneration } from '../generation';
+import { useRouter } from '../router';
 import GlobalNavbar from './GlobalNavbar';
 
 export default function LegalCompliance() {
+  const { navigate } = useRouter();
   const { backendState } = useGeneration();
   const legal = backendState?.legal as
     | {
@@ -29,6 +31,15 @@ export default function LegalCompliance() {
       <GlobalNavbar />
 
       <main className="flex-1 w-full max-w-[1400px] mx-auto px-6 py-8">
+        <div className="flex items-center gap-2 text-xs font-bold text-[#888899] uppercase tracking-widest mb-4">
+          <span className="hover:text-white cursor-pointer transition-colors" onClick={() => navigate('projects')}>Projects</span>
+          <ChevronRight className="w-3 h-3" />
+          <span className="hover:text-white cursor-pointer transition-colors" onClick={() => navigate('results')}>
+            {backendState?.startup_name || backendState?.idea || 'Startup'}
+          </span>
+          <ChevronRight className="w-3 h-3" />
+          <span className="text-[#6C47FF]">Legal & Compliance</span>
+        </div>
         <h1 className="text-3xl font-black text-white tracking-tight mb-8">
           Legal & Compliance — {backendState?.startup_name || backendState?.idea || 'Live Startup Data'}
         </h1>

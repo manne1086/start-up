@@ -1,14 +1,24 @@
 import { useState } from 'react';
-import { User, Key, Bell, CreditCard, AlertTriangle, Download, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { User, Key, Bell, CreditCard, AlertTriangle, Download, ArrowRight, Eye, EyeOff, ChevronRight } from 'lucide-react';
 import GlobalNavbar from './GlobalNavbar';
+import { useRouter } from '../router';
 
 export default function Settings() {
+  const { navigate } = useRouter();
   const [activeTab, setActiveTab] = useState('Profile');
   const [showKey, setShowKey] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-[#F0F0F0] flex flex-col font-sans pb-12">
       <GlobalNavbar />
+
+      <div className="px-6 py-4 max-w-[1200px] w-full mx-auto pb-0">
+        <div className="flex items-center gap-2 text-xs font-bold text-[#888899] uppercase tracking-widest">
+          <span className="hover:text-white cursor-pointer transition-colors" onClick={() => navigate('projects')}>Projects</span>
+          <ChevronRight className="w-3 h-3" />
+          <span className="text-[#6C47FF]">Settings</span>
+        </div>
+      </div>
 
       <main className="flex-1 w-full max-w-[1200px] mx-auto px-6 py-8 flex flex-col md:flex-row gap-8">
         

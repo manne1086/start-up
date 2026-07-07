@@ -11,6 +11,7 @@ import {
   Clock,
   Pause,
   Terminal,
+  ChevronRight,
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useGeneration } from '../generation';
@@ -68,6 +69,11 @@ export default function AgentProgress() {
       <GlobalNavbar />
 
       <div className="w-full bg-[#111118] border-b border-[#111118] px-6 py-4 flex flex-col gap-2 shrink-0">
+        <div className="flex items-center gap-2 text-xs font-bold text-[#888899] uppercase tracking-widest mb-2">
+          <span className="hover:text-white cursor-pointer transition-colors" onClick={() => navigate('projects')}>Projects</span>
+          <ChevronRight className="w-3 h-3" />
+          <span className="text-[#6C47FF]">Live Generation</span>
+        </div>
         <div className="flex justify-between items-center text-sm font-bold">
           <span className="text-white uppercase tracking-wider">
             {isPaused ? 'Step 4 of 10 - Human Review' : `Step ${Math.max(1, progressCount + 1)} of ${progressTotal} - Live Generation`}

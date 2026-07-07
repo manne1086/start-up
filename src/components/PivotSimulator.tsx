@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowRight, RefreshCw, Terminal, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertTriangle, ArrowRight, RefreshCw, Terminal, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { useGeneration } from '../generation';
 import GlobalNavbar from './GlobalNavbar';
@@ -30,6 +30,15 @@ export default function PivotSimulator() {
       <GlobalNavbar />
       
       <main className="flex-1 w-full max-w-[1400px] mx-auto px-6 py-10">
+        <div className="flex items-center gap-2 text-xs font-bold text-[#888899] uppercase tracking-widest mb-4">
+          <span className="hover:text-white cursor-pointer transition-colors" onClick={() => navigate('projects')}>Projects</span>
+          <ChevronRight className="w-3 h-3" />
+          <span className="hover:text-white cursor-pointer transition-colors" onClick={() => navigate('results')}>
+            {backendState?.startup_name || backendState?.idea || 'Startup'}
+          </span>
+          <ChevronRight className="w-3 h-3" />
+          <span className="text-[#6C47FF]">Pivot Simulator</span>
+        </div>
         
         <div className="mb-8">
           <h1 className="text-3xl font-black text-white tracking-tight mb-2">

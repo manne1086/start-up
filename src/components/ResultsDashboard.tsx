@@ -13,16 +13,20 @@ import {
   FileArchive,
   Link as LinkIcon,
   Globe,
+  ArrowLeft,
 } from 'lucide-react';
 import JSZip from 'jszip';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import GlobalNavbar from './GlobalNavbar';
 import { useGeneration } from '../generation';
 import { useRouter } from '../router';
+import { buildVisualizationData } from '../visualizationData';
+import { downloadPitchDeckPptx } from '../pptx';
 
 export default function ResultsDashboard() {
   const { navigate } = useRouter();
   const { backendState } = useGeneration();
+  const viz = buildVisualizationData(backendState);
 
   const ideaName = backendState?.startup_name || backendState?.idea?.toString()?.slice(0, 32) || 'Startup';
   const market = backendState?.market as Record<string, unknown> | null | undefined;
@@ -76,6 +80,7 @@ export default function ResultsDashboard() {
     zip.file('pitch-deck.json', JSON.stringify(pitchDeck ?? {}, null, 2));
     zip.file('mvp-architecture.json', JSON.stringify(mvp ?? {}, null, 2));
     zip.file('pivots.json', JSON.stringify(pivots ?? [], null, 2));
+    zip.file('startup-visualization-package.json', JSON.stringify(viz, null, 2));
 
     const blob = await zip.generateAsync({ type: 'blob' });
     downloadBlob(blob, `${safeFilename(ideaName)}.zip`);
@@ -110,6 +115,10 @@ export default function ResultsDashboard() {
     alert('Drive export is not configured yet. The share link was copied instead.');
   };
 
+  const handleDownloadPptx = async () => {
+    await downloadPitchDeckPptx(backendState, ideaName);
+  };
+
   const chartData = financials?.projections?.length
     ? financials.projections.map((row) => ({
         year: `Yr ${row.year ?? ''}`,
@@ -139,6 +148,9 @@ export default function ResultsDashboard() {
       </div>
 
       <main className="w-full max-w-[1600px] mx-auto px-6 py-8 flex flex-col flex-1">
+        <button onClick={() => navigate('projects')} className="flex items-center gap-2 text-xs font-bold text-[#888899] hover:text-white uppercase tracking-widest mb-6 transition-colors w-fit">
+          <ArrowLeft className="w-3 h-3" /> Back to Projects
+        </button>
         <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-2 border-[#00D4AA] bg-[#00D4AA]/10 p-4">
           <div className="flex items-center gap-3">
             <CheckCircle2 className="text-[#00D4AA] w-6 h-6" />
@@ -298,10 +310,10 @@ export default function ResultsDashboard() {
                   <Download className="w-3 h-3" /> .pptx
                 </button>
                 <button
-                  onClick={() => navigate('pitch')}
+                  onClick={handleDownloadPptx}
                   className="flex-1 px-3 py-2 bg-[#6C47FF]/10 border-2 border-[#6C47FF] text-[#6C47FF] font-bold text-xs hover:bg-[#6C47FF] hover:text-white transition-colors flex items-center justify-center gap-1"
                 >
-                  Edit Slides <ArrowRight className="w-3 h-3" />
+                  Download .pptx <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
             </div>

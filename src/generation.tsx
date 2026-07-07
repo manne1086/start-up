@@ -272,7 +272,8 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
   };
 
   const approveRun = async () => {
-    if (!threadId) {
+    const activeThreadId = threadId ?? (backendState?.thread_id as string | undefined) ?? null;
+    if (!activeThreadId) {
       throw new Error('No active generation run found.');
     }
 
@@ -280,7 +281,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ thread_id: threadId }),
+      body: JSON.stringify({ thread_id: activeThreadId }),
     });
 
     if (!response.ok) {
@@ -292,7 +293,8 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
   };
 
   const patchRun = async (patch: Record<string, unknown>) => {
-    if (!threadId) {
+    const activeThreadId = threadId ?? (backendState?.thread_id as string | undefined) ?? null;
+    if (!activeThreadId) {
       throw new Error('No active generation run found.');
     }
 
@@ -300,7 +302,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ thread_id: threadId, patch }),
+      body: JSON.stringify({ thread_id: activeThreadId, patch }),
     });
 
     if (!response.ok) {

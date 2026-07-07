@@ -1,11 +1,21 @@
 import { useState } from 'react';
 import GlobalNavbar from './GlobalNavbar';
-import { Download, AlertTriangle, Search, Activity, Pause, CheckCircle2 } from 'lucide-react';
+import { Download, AlertTriangle, Search, Activity, Pause, CheckCircle2, ChevronRight } from 'lucide-react';
+import { useRouter } from '../router';
 
 export default function ComponentLibrary() {
+  const { navigate } = useRouter();
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-[#F0F0F0] flex flex-col font-sans pb-24">
       <GlobalNavbar />
+
+      <div className="px-6 py-4 max-w-[1200px] w-full mx-auto pb-0">
+        <div className="flex items-center gap-2 text-xs font-bold text-[#888899] uppercase tracking-widest">
+          <span className="hover:text-white cursor-pointer transition-colors" onClick={() => navigate('landing')}>Home</span>
+          <ChevronRight className="w-3 h-3" />
+          <span className="text-[#6C47FF]">UI Kit</span>
+        </div>
+      </div>
 
       <main className="flex-1 w-full max-w-[1200px] mx-auto px-6 py-12 flex flex-col gap-16">
         

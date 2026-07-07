@@ -1,4 +1,4 @@
-import { AlertOctagon, RotateCcw, ArrowRight, Eye } from 'lucide-react';
+import { AlertOctagon, RotateCcw, ArrowRight, Eye, ArrowLeft } from 'lucide-react';
 import GlobalNavbar from './GlobalNavbar';
 import { useGeneration } from '../generation';
 import { useRouter } from '../router';
@@ -10,6 +10,12 @@ export default function ErrorState() {
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-[#F0F0F0] flex flex-col font-sans">
       <GlobalNavbar />
+      
+      <div className="px-6 py-4 absolute top-[56px] left-0">
+        <button onClick={() => navigate('projects')} className="flex items-center gap-2 text-xs font-bold text-[#888899] hover:text-white uppercase tracking-widest transition-colors w-fit">
+          <ArrowLeft className="w-3 h-3" /> Back to Projects
+        </button>
+      </div>
       
       <main className="flex-1 w-full max-w-2xl mx-auto px-6 py-20 flex flex-col items-center justify-center text-center">
         

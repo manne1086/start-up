@@ -12,8 +12,8 @@ import {
   ChevronUp,
   Sparkles,
   Target,
-  TrendingUp,
   Globe2,
+  ChevronRight,
 } from 'lucide-react';
 import GlobalNavbar from './GlobalNavbar';
 import { useGeneration } from '../generation';
@@ -29,7 +29,7 @@ function formatJson(value: unknown) {
 
 export default function HumanReview() {
   const { navigate, screen } = useRouter();
-  const { backendState, approveRun, patchRun, status } = useGeneration();
+  const { backendState, threadId, approveRun, patchRun, status } = useGeneration();
   const [showPatch, setShowPatch] = useState(false);
   const [patchText, setPatchText] = useState('{\n  "gtm_strategy": "Direct sales plus NGO partnerships"\n}');
   const [busy, setBusy] = useState(false);
@@ -76,7 +76,10 @@ export default function HumanReview() {
   const gaps = Array.isArray(market?.market_gaps) ? market.market_gaps : [];
 
   const handleApprove = async () => {
-    if (!backendState?.thread_id) return;
+    if (!threadId && !backendState?.thread_id) {
+      setLocalError('No active run found. Start a generation before approving.');
+      return;
+    }
     setBusy(true);
     setLocalError(null);
     try {
@@ -90,7 +93,10 @@ export default function HumanReview() {
   };
 
   const handlePatch = async () => {
-    if (!backendState?.thread_id) return;
+    if (!threadId && !backendState?.thread_id) {
+      setLocalError('No active run found. Start a generation before applying a patch.');
+      return;
+    }
     setBusy(true);
     setLocalError(null);
     try {
@@ -117,6 +123,14 @@ export default function HumanReview() {
           <p className="text-xs text-white/80">
             The draft now reflects Tavily research signals, market gaps, and competitor context instead of a generic placeholder.
           </p>
+        </div>
+      </div>
+
+      <div className="px-6 py-4 max-w-[1600px] w-full mx-auto pb-0">
+        <div className="flex items-center gap-2 text-xs font-bold text-[#888899] uppercase tracking-widest">
+          <span className="hover:text-white cursor-pointer transition-colors" onClick={() => navigate('projects')}>Projects</span>
+          <ChevronRight className="w-3 h-3" />
+          <span className="text-[#6C47FF]">Human Review</span>
         </div>
       </div>
 
@@ -424,7 +438,7 @@ export default function HumanReview() {
             onClick={handlePatch}
             disabled={busy}
           >
-            <Edit2 className="w-4 h-4" /> Apply Patch
+            <Edit2 className="w-4 h-4" /> {busy ? 'Applying Patch...' : 'Apply Patch'}
           </button>
 
           <button
@@ -432,7 +446,7 @@ export default function HumanReview() {
             disabled={busy}
             className="w-[50%] py-3 bg-[#6C47FF] border-2 border-[#6C47FF] text-white font-black text-sm hover:bg-[#111118] hover:text-[#6C47FF] shadow-[4px_4px_0px_#00D4AA] transition-all flex items-center justify-center gap-2"
           >
-            <CheckCircle2 className="w-5 h-5" /> Approve & Continue
+            <CheckCircle2 className="w-5 h-5" /> {busy ? 'Approving...' : 'Approve & Continue'}
           </button>
         </div>
 

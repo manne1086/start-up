@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Presentation, Download, Share2, Play, ChevronLeft, ChevronRight, RefreshCw, MoveVertical, Image as ImageIcon } from 'lucide-react';
 import { useGeneration } from '../generation';
+import { useRouter } from '../router';
 import GlobalNavbar from './GlobalNavbar';
+import { downloadPitchDeckPptx } from '../pptx';
 
 export default function PitchDeckEditor() {
+  const { navigate } = useRouter();
   const [activeSlide, setActiveSlide] = useState(4); // Market slide
   const { backendState } = useGeneration();
 
@@ -19,6 +22,9 @@ export default function PitchDeckEditor() {
   const activeContent = deckSlides.find((slide) => slide.number === activeSlide) ?? deckSlides[activeSlide - 1] ?? null;
   const brandTagline = pitchDeck?.brand?.tagline ?? 'Pitch Deck';
   const deckTitle = backendState?.startup_name || backendState?.idea || 'Startup';
+  const handleDownload = async () => {
+    await downloadPitchDeckPptx(backendState, deckTitle);
+  };
 
   return (
     <div className="h-screen bg-[#0A0A0F] text-[#F0F0F0] flex flex-col font-sans overflow-hidden">
@@ -27,6 +33,9 @@ export default function PitchDeckEditor() {
       {/* Top Action Bar */}
       <div className="h-14 border-b border-[#111118] bg-[#111118] px-6 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
+          <button onClick={() => navigate('results')} className="text-[#888899] hover:text-[#00D4AA] transition-colors mr-2 flex items-center">
+            <ChevronLeft className="w-5 h-5" />
+          </button>
           <Presentation className="w-5 h-5 text-[#6C47FF]" />
           <h1 className="font-bold text-white text-sm uppercase tracking-widest">{deckTitle} Pitch Deck Editor</h1>
         </div>
@@ -41,7 +50,7 @@ export default function PitchDeckEditor() {
           <button className="px-4 py-1.5 bg-transparent border-2 border-[#111118] text-[#888899] font-bold text-xs hover:border-[#00D4AA] hover:text-[#00D4AA] transition-colors flex items-center gap-2">
             <Share2 className="w-3 h-3" /> Share
           </button>
-          <button className="px-4 py-1.5 bg-[#6C47FF]/10 border-2 border-[#6C47FF] text-[#6C47FF] font-bold text-xs hover:bg-[#6C47FF] hover:text-white transition-colors flex items-center gap-2">
+          <button onClick={handleDownload} className="px-4 py-1.5 bg-[#6C47FF]/10 border-2 border-[#6C47FF] text-[#6C47FF] font-bold text-xs hover:bg-[#6C47FF] hover:text-white transition-colors flex items-center gap-2">
             <Download className="w-3 h-3" /> Download .pptx
           </button>
         </div>
