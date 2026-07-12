@@ -78,7 +78,11 @@ async def run_until_pause(thread_id: str) -> None:
         ]:
             await emit(thread_id, "step", {"node": node_name, "status": "started"})
             await trace_node_start(thread_id, state, node_name)
+            log_count_before = len(state.agent_logs)
             state = await node(state)
+            # Emit any new logs the node added (e.g. Tavily search queries/URLs)
+            for new_log in state.agent_logs[log_count_before:]:
+                await emit_log(thread_id, new_log)
             await trace_node_complete(thread_id, state, node_name)
             await emit(thread_id, "step", {"node": node_name, "status": "completed"})
 
@@ -109,7 +113,11 @@ async def run_after_resume(thread_id: str) -> None:
         ]:
             await emit(thread_id, "step", {"node": node_name, "status": "started"})
             await trace_node_start(thread_id, state, node_name)
+            log_count_before = len(state.agent_logs)
             state = await node(state)
+            # Emit any new logs the node added
+            for new_log in state.agent_logs[log_count_before:]:
+                await emit_log(thread_id, new_log)
             await trace_node_complete(thread_id, state, node_name)
             await emit(thread_id, "step", {"node": node_name, "status": "completed"})
 

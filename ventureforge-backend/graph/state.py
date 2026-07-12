@@ -9,6 +9,9 @@ class AgentLog(BaseModel):
     message: str
     status: Literal["info", "success", "warning", "error"]
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+    search_query: str | None = None
+    url: str | None = None
+    thought: str | None = None
 
 
 class Competitor(BaseModel):

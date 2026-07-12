@@ -133,6 +133,8 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5433/ventureforge
 REDIS_URL=redis://localhost:6379/0
 GROQ_API_KEY=your_groq_api_key
 TAVILY_API_KEY=your_tavily_api_key
+PRESENTATIONS_AI_API_KEY=your_presentations_ai_key
+PRESENTATIONS_AI_BASE_URL=https://api.presentations.ai
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 GOOGLE_REDIRECT_URI=http://localhost:8000/api/auth/google/callback
@@ -140,6 +142,27 @@ SESSION_SECRET=change-this-to-a-long-random-string
 ALLOWED_ORIGINS=http://localhost:3000
 APP_ENV=development
 ```
+
+### Presentations.ai export
+
+When the Presentations.ai key is set, the pitch deck export route sends a topic-based JSON request to:
+
+- `POST https://api.presentations.ai/api/v1/topic/document`
+
+The backend builds the `topic` from the current startup state and includes:
+
+- `slideCount`
+- `language`
+- `domain`
+- `targetAudience`
+- `tone`
+- `exportType: pptx`
+
+It also validates the key first with:
+
+- `GET https://api.presentations.ai/api/v1/authenticate`
+
+If Presentations.ai returns a poll URL, the backend keeps polling until the export is ready and then downloads the PPTX.
 
 ### Google OAuth
 

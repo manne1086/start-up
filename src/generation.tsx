@@ -17,6 +17,9 @@ type GenerationState = {
     message: string;
     status: 'info' | 'success' | 'warning' | 'error';
     timestamp?: string;
+    thought?: string;
+    search_query?: string;
+    url?: string;
   }>;
   business_plan?: Record<string, unknown> | null;
   market?: Record<string, unknown> | null;

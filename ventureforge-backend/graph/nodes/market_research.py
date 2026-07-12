@@ -9,10 +9,51 @@ async def market_research(state: StartupState) -> StartupState:
         f"{state.idea} market size competitors pricing",
         f"{state.idea} trends customer pain points regulations",
     ]
-    search_runs = [await search(query, max_results=4) for query in seed_queries]
-    results = [item for batch in search_runs for item in batch]
+
+    all_results = []
+
+    for query in seed_queries:
+        # Emit a log showing the search query being executed
+        state.agent_logs.append(
+            AgentLog(
+                agent="Market Research",
+                message=f"Searching external sources for market intelligence...",
+                status="info",
+                search_query=query,
+                thought=f"Querying Tavily to gather competitive landscape and market sizing data for: {query}",
+            )
+        )
+
+        results = await search(query, max_results=4)
+
+        # Emit individual logs for each result with its URL
+        for item in results:
+            url = item.get("url", "")
+            title = item.get("title", "Search result")
+            if url:
+                state.agent_logs.append(
+                    AgentLog(
+                        agent="Market Research",
+                        message=f"Found: {title}",
+                        status="info",
+                        url=url,
+                    )
+                )
+
+        all_results.extend(results)
+
+    # Emit a summary log
+    state.agent_logs.append(
+        AgentLog(
+            agent="Market Research",
+            message=f"Collected {len(all_results)} results across {len(seed_queries)} search queries. Synthesizing market intelligence...",
+            status="info",
+            thought="Analyzing search results to extract TAM/SAM/SOM, competitors, and market gaps.",
+        )
+    )
+
     research_blob = "\n".join(
-        f"- {item['title']}: {item['content']} ({item['url']})" for item in results
+        f"- {item['title']}: {item['content']} ({item['url']})" for item in all_results
     )
     prompt = f"""
 You are the VentureForge market research agent.
@@ -49,14 +90,14 @@ Make the TAM/SAM/SOM consistent with the evidence and mention any uncertainty in
                 "Localized onboarding",
                 "Distribution partnerships",
             ],
-            raw_search_results=[f"{item['title']}: {item['content']}" for item in results],
+            raw_search_results=[f"{item['title']}: {item['content']}" for item in all_results],
         )
     state.market = model
     state.completed_steps.append("market_research")
     state.agent_logs.append(
         AgentLog(
             agent="Market Research",
-            message=f"Market analysis generated from {len(results)} Tavily result(s) across {len(seed_queries)} query angles.",
+            message=f"Market analysis complete — {len(all_results)} Tavily results synthesized across {len(seed_queries)} queries.",
             status="success",
         )
     )

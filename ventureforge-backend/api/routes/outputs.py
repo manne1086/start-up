@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 
+from core.config import settings
+from services.presentations_ai import generate_presentations_ai_pptx
 from services.pptx_generator import generate_pitch_deck_pptx
 from services.run_manager import get_run_state
 
@@ -24,7 +26,16 @@ async def generate_pptx(payload: dict):
             raise HTTPException(status_code=404, detail="Run not found")
         state = run_state.model_dump(mode="json")
 
-    buffer = generate_pitch_deck_pptx(state)
+    buffer = None
+    if settings.PRESENTATIONS_AI_API_KEY:
+        try:
+            buffer = generate_presentations_ai_pptx(state)
+        except Exception as exc:
+            print(f"[Presentations.ai] Falling back to local PPTX generator: {exc}")
+
+    if buffer is None:
+        buffer = generate_pitch_deck_pptx(state)
+
     filename = f'{(state.get("startup_name") or state.get("idea") or "pitch-deck").replace(" ", "-").lower()}.pptx'
     headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
     return Response(content=buffer.getvalue(), media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation", headers=headers)

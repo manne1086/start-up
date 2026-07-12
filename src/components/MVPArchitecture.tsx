@@ -1,94 +1,179 @@
-import { Download, ExternalLink, Globe, Database, Server, Cpu, Clock, Users, IndianRupee, Box, ChevronRight } from 'lucide-react';
-import { useGeneration } from '../generation';
-import { useRouter } from '../router';
+import { Cpu, Layers3, Play, Rocket, Server, Sparkles, Database, GitBranch } from 'lucide-react';
 import GlobalNavbar from './GlobalNavbar';
-import { buildVisualizationData } from '../visualizationData';
 import ArchitectureCanvas from './ArchitectureCanvas';
-import RoadmapTimeline from './RoadmapTimeline';
+import type { ArchitectureModel } from './architecture-types';
+import { useGeneration } from '../generation';
+import { buildVisualizationData } from '../visualizationData';
+const FALLBACK_MVP: ArchitectureModel = {
+  title: 'MVP Architecture',
+  layout: 'layered',
+  theme: 'excalidraw-sketch',
+  layers: [
+    { id: 'frontend', label: 'Frontend', order: 0 },
+    { id: 'backend', label: 'Backend', order: 1 },
+    { id: 'data', label: 'Data', order: 2 },
+  ],
+  nodes: [
+    { id: 'web', label: 'React App', type: 'frontend', layer: 'frontend', description: 'Customer-facing interface and onboarding flow' },
+    { id: 'api', label: 'FastAPI', type: 'backend', layer: 'backend', description: 'Business logic, orchestration, and API surface' },
+    { id: 'agent', label: 'AI Agent', type: 'ai', layer: 'backend', description: 'LLM-driven planning and analysis tasks' },
+    { id: 'db', label: 'PostgreSQL', type: 'database', layer: 'data', description: 'Source of truth for app state and outputs' },
+  ],
+  edges: [
+    { from: 'web', to: 'api', label: 'HTTP' },
+    { from: 'api', to: 'agent', label: 'Task graph' },
+    { from: 'api', to: 'db', label: 'Persistence' },
+  ],
+};
 
 export default function MVPArchitecture() {
-  const { navigate } = useRouter();
   const { backendState } = useGeneration();
-  const viz = buildVisualizationData(backendState);
-  const stack = viz.recommendedTechStack;
-  const roadmap = viz.roadmapTimeline.phases;
-  const architecture = viz.architecture;
+  const vizData = buildVisualizationData(backendState);
+  const mvp = backendState?.mvp as
+    | {
+        estimated_weeks?: number;
+        team_size?: number;
+        estimated_cost_inr?: string;
+        recommended_stack?: Array<{ technology?: string; rationale?: string }>;
+      }
+    | null
+    | undefined;
+
+  const architecture = vizData.architecture;
+  const stack = mvp?.recommended_stack ?? [];
+  const techStack = vizData.recommendedTechStack;
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-[#F0F0F0] flex flex-col font-sans pb-12">
+    <div className="min-h-screen bg-[#0A0A0F] text-[#F0F0F0]">
       <GlobalNavbar />
 
-      <main className="flex-1 w-full max-w-[1400px] mx-auto px-6 py-8">
-        <div className="flex items-center gap-2 text-xs font-bold text-[#888899] uppercase tracking-widest mb-4">
-          <span className="hover:text-white cursor-pointer transition-colors" onClick={() => navigate('projects')}>Projects</span>
-          <ChevronRight className="w-3 h-3" />
-          <span className="hover:text-white cursor-pointer transition-colors" onClick={() => navigate('results')}>
-            {backendState?.startup_name || backendState?.idea || 'Startup'}
-          </span>
-          <ChevronRight className="w-3 h-3" />
-          <span className="text-[#6C47FF]">MVP Architecture</span>
-        </div>
-        <h1 className="text-3xl font-black text-white tracking-tight mb-8">
-          MVP Architecture - {backendState?.startup_name || backendState?.idea || 'Live Startup Data'}
-        </h1>
+      <main className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-6 py-8 overflow-x-hidden">
+        <section className="rounded-3xl border border-white/10 bg-[#111118] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.35)]">
+          <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.3em] text-[#888899]">
+                <Rocket className="h-4 w-4 text-[#6C47FF]" />
+                How it works
+              </div>
+              <h1 className="text-3xl font-black text-white">From customer idea to working startup system</h1>
+              <p className="mt-3 max-w-3xl text-sm leading-relaxed text-[#888899]">
+                VentureForge turns a plain startup idea into a guided workflow: it researches the market,
+                estimates the opportunity, maps the MVP architecture, and packages the output so founders
+                can make faster product and funding decisions.
+              </p>
+            </div>
+            <button className="inline-flex self-start items-center gap-2 rounded-xl border border-[#00D4AA]/30 bg-[#00D4AA]/10 px-4 py-2 text-sm font-bold text-[#00D4AA] lg:self-auto">
+              <Play className="h-4 w-4" />
+              Preview stack
+            </button>
+          </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-          <div className="bg-[#111118] border-2 border-[#111118] p-5 flex flex-col justify-between">
-            <div className="text-xs font-bold text-[#888899] uppercase tracking-widest mb-2 flex items-center gap-2"><Box className="w-4 h-4 text-[#6C47FF]"/> Stack</div>
-            <div className="text-xl font-black text-white">{stack[0]?.technology ?? 'No stack generated yet'}</div>
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-[#0A0A0F] p-4">
+              <div className="text-xs uppercase tracking-[0.25em] text-[#888899]">For customers</div>
+              <div className="mt-2 text-base font-bold text-white">Less guesswork</div>
+              <p className="mt-2 text-sm leading-relaxed text-[#888899]">
+                Founders see the idea broken into clear modules, risks, and next steps instead of a vague pitch.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-[#0A0A0F] p-4">
+              <div className="text-xs uppercase tracking-[0.25em] text-[#888899]">How it runs</div>
+              <div className="mt-2 text-base font-bold text-white">Multi-agent pipeline</div>
+              <p className="mt-2 text-sm leading-relaxed text-[#888899]">
+                The app sequences research, planning, compliance, and finance so each module feeds the next.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-[#0A0A0F] p-4">
+              <div className="text-xs uppercase tracking-[0.25em] text-[#888899]">What they get</div>
+              <div className="mt-2 text-base font-bold text-white">Investor-ready outputs</div>
+              <p className="mt-2 text-sm leading-relaxed text-[#888899]">
+                Architecture, market intelligence, financials, and pitch content are delivered in one place.
+              </p>
+            </div>
           </div>
-          <div className="bg-[#111118] border-2 border-[#111118] p-5 flex flex-col justify-between">
-            <div className="text-xs font-bold text-[#888899] uppercase tracking-widest mb-2 flex items-center gap-2"><Clock className="w-4 h-4 text-[#00D4AA]"/> Est. Build</div>
-            <div className="text-xl font-black text-white">{viz.roadmapTimeline.phases.length ? `${viz.roadmapTimeline.phases[viz.roadmapTimeline.phases.length - 1].endWeek} Weeks` : 'Pending'}</div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="bg-[#111118] border-2 border-[#111118] p-6 flex flex-col hover:border-[#6C47FF] transition-colors card-hover animate-fadeInUp">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-[#6C47FF]/10 flex items-center justify-center">
+                  <Cpu className="w-5 h-5 text-[#6C47FF]" />
+                </div>
+                <div className="text-xs font-bold text-[#888899] uppercase tracking-widest">Selected Stack</div>
+              </div>
+              <div className="text-2xl font-black text-white mb-2">{techStack.length > 0 ? `${techStack.length} Layers` : 'TBD'}</div>
+              <p className="text-sm text-[#888899] font-medium leading-relaxed">
+                {techStack.length > 0 ? `Optimized for ${techStack.some((t) => t.layer === 'AI') ? 'AI workloads' : 'fast time-to-market'} and scalability.` : 'Generating optimal stack configuration...'}
+              </p>
+            </div>
+
+            <div className="bg-[#111118] border-2 border-[#111118] p-6 flex flex-col hover:border-[#00D4AA] transition-colors card-hover animate-fadeInUp delay-100">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-[#00D4AA]/10 flex items-center justify-center">
+                  <Database className="w-5 h-5 text-[#00D4AA]" />
+                </div>
+                <div className="text-xs font-bold text-[#888899] uppercase tracking-widest">Data Layer</div>
+              </div>
+              <div className="text-2xl font-black text-white mb-2">
+                {techStack.find((t) => t.layer?.toLowerCase().includes('database'))?.technology ?? 'TBD'}
+              </div>
+              <p className="text-sm text-[#888899] font-medium leading-relaxed">
+                {techStack.length > 0 ? 'Primary system of record for core entities and transactions.' : 'Defining data persistence strategy...'}
+              </p>
+            </div>
+
+            <div className="bg-[#111118] border-2 border-[#111118] p-6 flex flex-col hover:border-[#6C47FF] transition-colors card-hover animate-fadeInUp delay-200">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-[#6C47FF]/10 flex items-center justify-center">
+                  <GitBranch className="w-5 h-5 text-[#6C47FF]" />
+                </div>
+                <div className="text-xs font-bold text-[#888899] uppercase tracking-widest">Complexity</div>
+              </div>
+              <div className="text-2xl font-black text-white mb-2">
+                {techStack.length > 0 ? (techStack.filter((t) => t.complexity === 'High').length > 0 ? 'High' : 'Medium') : 'TBD'}
+              </div>
+              <p className="text-sm text-[#888899] font-medium leading-relaxed">
+                {techStack.length > 0 ? 'Development effort estimation based on selected capabilities.' : 'Analyzing project scope and complexity...'}
+              </p>
+            </div>
           </div>
-          <div className="bg-[#111118] border-2 border-[#111118] p-5 flex flex-col justify-between">
-            <div className="text-xs font-bold text-[#888899] uppercase tracking-widest mb-2 flex items-center gap-2"><Users className="w-4 h-4 text-[#6C47FF]"/> Team Size</div>
-            <div className="text-xl font-black text-white">{backendState?.mvp?.team_size ? `${backendState.mvp.team_size} Engineers` : '4 Engineers'}</div>
-          </div>
-          <div className="bg-[#111118] border-2 border-[#111118] p-5 flex flex-col justify-between">
-            <div className="text-xs font-bold text-[#888899] uppercase tracking-widest mb-2 flex items-center gap-2"><IndianRupee className="w-4 h-4 text-[#00D4AA]"/> Est. Cost</div>
-            <div className="text-xl font-black text-[#00D4AA]">{backendState?.mvp?.estimated_cost_inr ?? '₹2,50,000'}</div>
-          </div>
-        </div>
+        </section>
 
         <ArchitectureCanvas architecture={architecture} />
 
-        <div className="mb-12">
-          <h2 className="text-sm font-black text-white uppercase tracking-widest mb-6">Recommended Technology Stack</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {stack.length ? stack.slice(0, 3).map((item, index) => {
-              const icons = [Globe, Server, Database];
-              const Icon = icons[index] ?? Cpu;
-              return (
-                <div key={index} className="bg-[#0A0A0F] border border-[#111118] p-6 hover:border-[#6C47FF] transition-colors">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Icon className="w-6 h-6 text-[#00D4AA]" />
-                    <div>
-                    <h3 className="font-bold text-white">{item.layer}</h3>
-                    <div className="text-xs text-[#00D4AA] font-mono">{item.technology}</div>
-                  </div>
-                </div>
-                  <p className="text-sm text-[#888899] mb-4">{item.reason}</p>
-                  <div className="inline-block px-2 py-1 bg-[#111118] text-xs font-bold text-[#F0F0F0] border border-[#111118]">Complexity: {item.complexity}</div>
-                </div>
-              );
-            }) : (
-              <div className="text-[#888899]">No architecture stack generated yet.</div>
-            )}
+        <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="rounded-3xl border border-white/10 bg-[#111118] p-6">
+            <div className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-[0.25em] text-white">
+              <Layers3 className="h-4 w-4 text-[#00D4AA]" />
+              Recommended Stack
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {stack.length ? stack.map((item, index) => (
+                <span key={`${item.technology ?? 'stack'}-${index}`} className="rounded-full border border-[#6C47FF]/30 bg-[#6C47FF]/10 px-3 py-1 text-xs font-bold text-[#C9BEFF]">
+                  {item.technology ?? 'Technology'}
+                </span>
+              )) : <span className="text-sm text-[#888899]">The backend has not produced a stack yet.</span>}
+            </div>
           </div>
-        </div>
 
-        <RoadmapTimeline phases={roadmap} />
-
-        <div className="flex gap-4">
-          <button className="px-6 py-3 bg-transparent border-2 border-[#111118] text-[#888899] font-bold text-sm hover:border-[#6C47FF] hover:text-[#6C47FF] transition-colors flex items-center justify-center gap-2">
-            <Download className="w-4 h-4" /> Download Roadmap .pdf
-          </button>
-          <button className="px-6 py-3 bg-[#6C47FF] border-2 border-[#6C47FF] text-white font-bold text-sm hover:bg-[#0A0A0F] hover:text-[#6C47FF] transition-colors flex items-center justify-center gap-2 shadow-[2px_2px_0px_transparent] hover:shadow-[4px_4px_0px_#00D4AA]">
-            Export to Notion <ExternalLink className="w-4 h-4" />
-          </button>
-        </div>
-
+          <div className="rounded-3xl border border-white/10 bg-[#111118] p-6">
+            <div className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-[0.25em] text-white">
+              <Cpu className="h-4 w-4 text-[#6C47FF]" />
+              Why this helps
+            </div>
+            <p className="text-sm leading-relaxed text-[#888899]">
+              This view explains the internal system in customer terms: it shows the architecture, the flow of work,
+              and the business outcome so users can understand what the product does before they commit.
+            </p>
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#0A0A0F] px-3 py-1 text-xs font-bold text-[#00D4AA]">
+              <Server className="h-3.5 w-3.5" />
+              Ready for iteration
+            </div>
+            <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#0A0A0F] px-3 py-1 text-xs font-bold text-[#888899]">
+              <Sparkles className="h-3.5 w-3.5" />
+              Uses live backend state when available
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   );

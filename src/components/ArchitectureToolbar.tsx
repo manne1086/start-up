@@ -22,7 +22,7 @@ export default memo(function ArchitectureToolbar({
   ];
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#0D0D14]/90 p-2">
+    <div className="flex min-w-max flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-[#0D0D14]/90 p-2">
       {items.map((item) => {
         const Icon = item.icon;
         return (

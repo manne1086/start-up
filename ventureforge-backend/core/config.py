@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
     GROQ_API_KEY: str = ""
     TAVILY_API_KEY: str = ""
+    PRESENTATIONS_AI_API_KEY: str = ""
+    PRESENTATIONS_AI_BASE_URL: str = "https://api.presentations.ai"
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/auth/google/callback"
@@ -28,3 +30,4 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
+# Force uvicorn reload
