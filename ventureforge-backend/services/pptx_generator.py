@@ -10,11 +10,33 @@ from pptx.enum.chart import XL_CHART_TYPE
 from pptx.enum.shapes import MSO_AUTO_SHAPE_TYPE as MSO_SHAPE
 from pptx.enum.shapes import MSO_CONNECTOR_TYPE as MSO_CONNECTOR
 from pptx.enum.text import PP_ALIGN
-from pptx.util import Inches, Pt
+from pptx.util import Emu, Inches, Pt
 
 
 SLIDE_W = Inches(13.333)
 SLIDE_H = Inches(7.5)
+
+
+def _add_image(slide, image_bytes: bytes | None, left: float, top: float, width: float, height: float, *, opacity: float = 0.25):
+    if not image_bytes:
+        return None
+    from io import BytesIO as _BIO
+    stream = _BIO(image_bytes)
+    pic = slide.shapes.add_picture(stream, Inches(left), Inches(top), Inches(width), Inches(height))
+    # Send to back so text stays readable
+    sp = pic._element
+    sp.getparent().insert(0, sp)
+    # Apply transparency via alpha modulation on the image fill
+    if opacity < 1.0:
+        from lxml import etree
+        ns = "http://schemas.openxmlformats.org/drawingml/2006/main"
+        blend_fill = pic._element.find(f".//{{{ns}}}blipFill")
+        if blend_fill is not None:
+            blip = blend_fill.find(f"{{{ns}}}blip")
+            if blip is not None:
+                alpha_mod = etree.SubElement(blip, f"{{{ns}}}alphaModFix")
+                alpha_mod.set("amt", str(int(opacity * 100000)))
+    return pic
 
 
 def _rgb(hex_color: str) -> RGBColor:
@@ -109,9 +131,10 @@ def _split_business(state: dict[str, Any]) -> dict[str, Any]:
     return state.get("business_plan") or {}
 
 
-def add_cover_slide(pptx: Presentation, state: dict[str, Any]):
+def add_cover_slide(pptx: Presentation, state: dict[str, Any], images: dict[str, bytes] | None = None):
     slide = pptx.slides.add_slide(pptx.slide_layouts[6])
     _configure_slide(slide)
+    _add_image(slide, (images or {}).get("cover"), 8.0, 0.5, 5.0, 6.5, opacity=0.18)
     startup_name = _safe_str(state.get("startup_name") or state.get("idea"), "Startup")
     tagline = _safe_str(((state.get("pitch_deck") or {}).get("brand") or {}).get("tagline"), "Investor-ready startup deck")
     _add_textbox(slide, startup_name, 0.72, 0.7, 8.8, 0.8, font_size=30, bold=True)
@@ -124,9 +147,10 @@ def add_cover_slide(pptx: Presentation, state: dict[str, Any]):
     _add_tag(slide, "Powered by VentureForge", 0.72, 6.55, 2.3, 0.38, fill="#111118")
 
 
-def add_executive_summary_slide(pptx: Presentation, state: dict[str, Any]):
+def add_executive_summary_slide(pptx: Presentation, state: dict[str, Any], images: dict[str, bytes] | None = None):
     slide = pptx.slides.add_slide(pptx.slide_layouts[6])
     _configure_slide(slide)
+    _add_image(slide, (images or {}).get("executive_summary"), 9.5, 1.6, 3.5, 2.4, opacity=0.3)
     _make_slide_title(slide, "Executive Summary", "What the startup is, why it matters, and how it makes money")
     bp = _split_business(state)
     left = [
@@ -143,9 +167,10 @@ def add_executive_summary_slide(pptx: Presentation, state: dict[str, Any]):
     _add_textbox(slide, _safe_str(bp.get("target_market"), "Target market pending"), 0.72, 3.42, 12.0, 0.6, font_size=16, bold=True)
 
 
-def add_market_slide(pptx: Presentation, state: dict[str, Any]):
+def add_market_slide(pptx: Presentation, state: dict[str, Any], images: dict[str, bytes] | None = None):
     slide = pptx.slides.add_slide(pptx.slide_layouts[6])
     _configure_slide(slide)
+    _add_image(slide, (images or {}).get("market"), 0.0, 0.0, 13.333, 7.5, opacity=0.08)
     _make_slide_title(slide, "Market Size", "TAM, SAM, and SOM presented as a nested funnel")
     market = state.get("market") or {}
     levels = [
@@ -171,9 +196,10 @@ def add_market_slide(pptx: Presentation, state: dict[str, Any]):
         x += 3.85
 
 
-def add_architecture_slide(pptx: Presentation, state: dict[str, Any]):
+def add_architecture_slide(pptx: Presentation, state: dict[str, Any], images: dict[str, bytes] | None = None):
     slide = pptx.slides.add_slide(pptx.slide_layouts[6])
     _configure_slide(slide)
+    _add_image(slide, (images or {}).get("architecture"), 0.0, 0.0, 13.333, 7.5, opacity=0.06)
     _make_slide_title(slide, "MVP Architecture", "Rendered directly from architecture.nodes and architecture.edges")
     architecture = state.get("mvp") or {}
     model = state.get("architecture") or state.get("mvp_architecture") or {}
@@ -227,9 +253,10 @@ def add_architecture_slide(pptx: Presentation, state: dict[str, Any]):
         _add_textbox(slide, _safe_str(edge.get("label"), ""), min(x1, x2) + 0.05, (y1 + y2) / 2 - 0.12, abs(x2 - x1) or 1, 0.2, font_size=8, color="#00D4AA", align=PP_ALIGN.CENTER)
 
 
-def add_tech_stack_slide(pptx: Presentation, state: dict[str, Any]):
+def add_tech_stack_slide(pptx: Presentation, state: dict[str, Any], images: dict[str, bytes] | None = None):
     slide = pptx.slides.add_slide(pptx.slide_layouts[6])
     _configure_slide(slide)
+    _add_image(slide, (images or {}).get("tech_stack"), 0.0, 0.0, 13.333, 7.5, opacity=0.06)
     _make_slide_title(slide, "Recommended Tech Stack", "Layered implementation stack with complexity and rationale")
     stack = ((state.get("mvp") or {}).get("recommended_stack") or [])[:4]
     x = 0.72
@@ -246,9 +273,10 @@ def add_tech_stack_slide(pptx: Presentation, state: dict[str, Any]):
         x += 3.1
 
 
-def add_financial_slide(pptx: Presentation, state: dict[str, Any]):
+def add_financial_slide(pptx: Presentation, state: dict[str, Any], images: dict[str, bytes] | None = None):
     slide = pptx.slides.add_slide(pptx.slide_layouts[6])
     _configure_slide(slide)
+    _add_image(slide, (images or {}).get("financial"), 0.0, 0.0, 13.333, 7.5, opacity=0.06)
     _make_slide_title(slide, "Financial Projection", "Five-year revenue, EBITDA, and free cash flow")
     financials = state.get("financials") or {}
     projections = financials.get("projections") or []
@@ -277,9 +305,10 @@ def add_financial_slide(pptx: Presentation, state: dict[str, Any]):
     _add_card(slide, "Payback", _safe_str(financials.get("payback_months"), "Pending"), 9.35, 4.25, 2.7, 1.0, accent="#4DA3FF")
 
 
-def add_roadmap_slide(pptx: Presentation, state: dict[str, Any]):
+def add_roadmap_slide(pptx: Presentation, state: dict[str, Any], images: dict[str, bytes] | None = None):
     slide = pptx.slides.add_slide(pptx.slide_layouts[6])
     _configure_slide(slide)
+    _add_image(slide, (images or {}).get("roadmap"), 0.0, 0.0, 13.333, 7.5, opacity=0.06)
     _make_slide_title(slide, "Roadmap", "Milestones, week markers, deliverables, and task cards")
     roadmap = ((state.get("mvp") or {}).get("roadmap_phases") or (state.get("roadmapTimeline") or {}).get("phases") or [])
     if not roadmap:
@@ -308,9 +337,10 @@ def add_roadmap_slide(pptx: Presentation, state: dict[str, Any]):
             _add_tag(slide, _safe_str(task), milestone_x - 0.55, 3.86 + ti * 0.3, 2.4, 0.22, fill="#0A0A0F", color="#F0F0F0")
 
 
-def add_competitor_slide(pptx: Presentation, state: dict[str, Any]):
+def add_competitor_slide(pptx: Presentation, state: dict[str, Any], images: dict[str, bytes] | None = None):
     slide = pptx.slides.add_slide(pptx.slide_layouts[6])
     _configure_slide(slide)
+    _add_image(slide, (images or {}).get("competitor"), 0.0, 0.0, 13.333, 7.5, opacity=0.06)
     _make_slide_title(slide, "Competitor Landscape", "Key competitors and market positioning")
     competitors = (((state.get("market") or {}).get("competitors")) or [])[:4]
     headers = ["Company", "Founded", "Funding", "Pricing", "Focus", "Threat"]
@@ -337,9 +367,10 @@ def add_competitor_slide(pptx: Presentation, state: dict[str, Any]):
             _add_tag(slide, value, left, row_y, col_w[i] - 0.05, 0.28, fill="#0A0A0F", color="#F0F0F0")
 
 
-def add_risks_slide(pptx: Presentation, state: dict[str, Any]):
+def add_risks_slide(pptx: Presentation, state: dict[str, Any], images: dict[str, bytes] | None = None):
     slide = pptx.slides.add_slide(pptx.slide_layouts[6])
     _configure_slide(slide)
+    _add_image(slide, (images or {}).get("risks"), 0.0, 0.0, 13.333, 7.5, opacity=0.06)
     _make_slide_title(slide, "Risks & Recommendations", "Operational risks plus investor-facing guidance")
     risks = (((state.get("business_plan") or {}).get("key_risks")) or ["Market timing", "Data quality", "Distribution"])[:3]
     recs = [
@@ -357,24 +388,24 @@ def add_risks_slide(pptx: Presentation, state: dict[str, Any]):
 
 import os
 
-def generate_pitch_deck_pptx(state: dict[str, Any]) -> BytesIO:
+def generate_pitch_deck_pptx(state: dict[str, Any], images: dict[str, bytes] | None = None) -> BytesIO:
     template_path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "template.pptx")
     if os.path.exists(template_path):
         pptx = Presentation(template_path)
     else:
         pptx = Presentation()
-    
+
     pptx.slide_width = SLIDE_W
     pptx.slide_height = SLIDE_H
-    add_cover_slide(pptx, state)
-    add_executive_summary_slide(pptx, state)
-    add_market_slide(pptx, state)
-    add_architecture_slide(pptx, state)
-    add_tech_stack_slide(pptx, state)
-    add_financial_slide(pptx, state)
-    add_roadmap_slide(pptx, state)
-    add_competitor_slide(pptx, state)
-    add_risks_slide(pptx, state)
+    add_cover_slide(pptx, state, images)
+    add_executive_summary_slide(pptx, state, images)
+    add_market_slide(pptx, state, images)
+    add_architecture_slide(pptx, state, images)
+    add_tech_stack_slide(pptx, state, images)
+    add_financial_slide(pptx, state, images)
+    add_roadmap_slide(pptx, state, images)
+    add_competitor_slide(pptx, state, images)
+    add_risks_slide(pptx, state, images)
     output = BytesIO()
     pptx.save(output)
     output.seek(0)

@@ -53,7 +53,7 @@ export default function Home() {
         {/* Input */}
         <div className="w-full max-w-3xl relative animate-fadeInUp delay-200">
           <div className="relative group">
-            <div className="absolute -inset-[1px] rounded-full bg-gradient-to-r from-[#6C47FF] via-[#00D4AA] to-[#6C47FF] opacity-30 group-focus-within:opacity-70 blur-sm transition-opacity duration-500 animate-gradientShift" style={{ backgroundSize: '200% 200%' }} />
+            <div className="absolute -inset-[1px] rounded-full bg-gradient-to-r from-[#6C47FF] via-[#00D4AA] to-[#6C47FF] opacity-30 group-focus-within:opacity-70 blur-sm transition-opacity duration-500 animate-gradientShift" style={{ backgroundSize: '200% 50%' }} />
             <textarea
               value={idea}
               onChange={(e) => setIdea(e.target.value)}

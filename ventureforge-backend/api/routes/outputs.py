@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from core.config import settings
 from services.groq_client import structured_reasoning
+from services.image_fetcher import fetch_slide_images
 from services.presentations_ai import generate_presentations_ai_pptx
 from services.pptx_generator import generate_pitch_deck_pptx
 from services.run_manager import get_run_state
@@ -47,6 +48,9 @@ async def generate_pptx(payload: dict):
             detail="Generation is not complete yet — pitch_deck data is missing. Complete the full generation first.",
         )
 
+    idea = str(state.get("idea") or state.get("startup_name") or "")
+    images = await fetch_slide_images(idea)
+
     buffer = None
     if settings.PRESENTATIONS_AI_API_KEY:
         try:
@@ -56,7 +60,7 @@ async def generate_pptx(payload: dict):
 
     if buffer is None:
         try:
-            buffer = generate_pitch_deck_pptx(state)
+            buffer = generate_pitch_deck_pptx(state, images=images)
         except Exception as exc:
             raise HTTPException(status_code=500, detail=f"PPTX generation failed: {exc}") from exc
 

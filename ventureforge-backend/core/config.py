@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
     GROQ_API_KEY: str = ""
     TAVILY_API_KEY: str = ""
+    UNSPLASH_ACCESS_KEY: str = ""
     PRESENTATIONS_AI_API_KEY: str = ""
     PRESENTATIONS_AI_BASE_URL: str = "https://api.presentations.ai"
     GOOGLE_CLIENT_ID: str = ""
