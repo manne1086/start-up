@@ -17,7 +17,7 @@ import {
   Brain,
   Lightbulb,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useGeneration } from '../generation';
 import { useRouter } from '../router';
 import GlobalNavbar from './GlobalNavbar';
@@ -55,7 +55,6 @@ function extractDomain(url: string): string {
 export default function AgentProgress() {
   const { navigate, screen } = useRouter();
   const { backendState, status, error } = useGeneration();
-  const logEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (status === 'paused' && screen !== 'review') {
@@ -94,13 +93,8 @@ export default function AgentProgress() {
     return Array.from(urlSet.values());
   }, [displayLogs]);
 
-  // Auto-scroll logs
-  useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [displayLogs.length]);
-
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-[#F0F0F0] flex flex-col font-sans">
+    <div className="h-screen bg-[#0A0A0F] text-[#F0F0F0] flex flex-col font-sans overflow-hidden">
       <GlobalNavbar />
 
       {/* Progress Header */}
@@ -124,10 +118,10 @@ export default function AgentProgress() {
         </div>
       </div>
 
-      <main className="flex-1 flex flex-col lg:flex-row w-full max-w-[1600px] mx-auto overflow-hidden">
+      <main className="flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[1600px] mx-auto overflow-hidden">
         
         {/* Left Panel — Steps */}
-        <div className="w-full lg:w-[38%] border-r border-white/5 p-6 lg:p-8 flex flex-col overflow-y-auto custom-scrollbar">
+        <div className="w-full lg:w-[38%] min-h-0 border-r border-white/5 p-6 lg:p-8 flex flex-col overflow-y-auto custom-scrollbar">
           <div className="flex-1 flex flex-col gap-3">
             {flowSteps.map((step, i) => {
               const Icon = step.icon;
@@ -183,7 +177,7 @@ export default function AgentProgress() {
         </div>
 
         {/* Right Panel — Agent Log */}
-        <div className="w-full lg:w-[62%] p-6 lg:p-8 flex flex-col bg-[#0A0A0F] overflow-hidden gap-4">
+        <div className="w-full lg:w-[62%] min-h-0 p-6 lg:p-8 flex flex-col bg-[#0A0A0F] overflow-hidden gap-4">
           
           {/* Sources Consulted Panel */}
           {sources.length > 0 && (
@@ -217,7 +211,7 @@ export default function AgentProgress() {
           )}
 
           {/* Terminal */}
-          <div className="flex-1 rounded-xl border border-[#6C47FF]/30 flex flex-col relative overflow-hidden glass" style={{ minHeight: 300 }}>
+          <div className="flex-1 min-h-0 rounded-xl border border-[#6C47FF]/30 flex flex-col relative overflow-hidden glass" style={{ minHeight: 300 }}>
             {/* Terminal header */}
             <div className="p-3 border-b border-white/5 bg-[#111118]/80 flex items-center justify-between rounded-t-xl">
               <div className="flex items-center gap-2">
@@ -232,7 +226,7 @@ export default function AgentProgress() {
             </div>
 
             {/* Log entries */}
-            <div className="flex-1 p-5 font-mono text-sm overflow-y-auto custom-scrollbar scrobble flex flex-col gap-1">
+            <div className="flex-1 min-h-0 p-5 font-mono text-sm overflow-y-auto custom-scrollbar scrobble flex flex-col gap-1">
               {displayLogs.length === 0 ? (
                 <div className="text-[#555566] flex items-center gap-2">
                   <div className="flex gap-1">
@@ -296,7 +290,6 @@ export default function AgentProgress() {
                   );
                 })
               )}
-              <div ref={logEndRef} />
             </div>
 
             {/* Terminal footer */}
