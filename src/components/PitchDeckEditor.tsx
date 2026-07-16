@@ -1,30 +1,41 @@
 import { useState, useRef, useEffect } from 'react';
-import { Presentation, Download, Share2, Play, ChevronLeft, ChevronRight, RefreshCw, MoveVertical, Image as ImageIcon, FileText, Plus, Trash2, Copy, Maximize, Edit3 } from 'lucide-react';
+import { Presentation, Download, Share2, Play, ChevronLeft, ChevronRight, RefreshCw, MoveVertical, FileText, Plus, Trash2, Copy, Maximize, Edit3, Loader2 } from 'lucide-react';
 import { useGeneration } from '../generation';
 import { useRouter } from '../router';
 import GlobalNavbar from './GlobalNavbar';
 import { downloadPitchDeckPptx } from '../pptx';
 import { exportStartupPdf } from '../pdfExport';
+import { regenerateSlideContent } from '../pitchDeckApi';
+
+type Slide = {
+  id: number;
+  number?: number;
+  title?: string;
+  type?: string;
+  content?: Record<string, unknown>;
+};
 
 export default function PitchDeckEditor() {
   const { navigate } = useRouter();
-  const { backendState } = useGeneration();
+  const { backendState, updatePitchDeck } = useGeneration();
 
   const initialDeck = backendState?.pitch_deck as
     | {
-        slides?: Array<{ number?: number; id?: number; title?: string; type?: string; content?: Record<string, unknown> }>;
+        slides?: Slide[];
         brand?: { tagline?: string; primary_color?: string; secondary_color?: string; font?: string };
       }
     | null
     | undefined;
 
   // Local state for slide editing
-  const [slides, setSlides] = useState(initialDeck?.slides ?? []);
+  const [slides, setSlides] = useState<Slide[]>(initialDeck?.slides ?? []);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [speakerNotes, setSpeakerNotes] = useState<Record<number, string>>({});
   const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadError, setDownloadError] = useState('');
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [actionError, setActionError] = useState('');
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
 
   // Initialize slides if empty
@@ -39,6 +50,15 @@ export default function PitchDeckEditor() {
       ]);
     }
   }, [slides.length]);
+
+  // Sync every local edit (title, layout, content, order, add/remove) back into
+  // the shared generation state so PDF export and the results dashboard reflect
+  // edits made here — not just the original backend-generated deck.
+  useEffect(() => {
+    if (slides.length === 0) return;
+    updatePitchDeck((deck) => ({ ...deck, slides }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slides]);
 
   const activeSlide = slides[activeSlideIndex] ?? slides[0];
   const brandTagline = initialDeck?.brand?.tagline ?? 'Pitch Deck';
@@ -64,38 +84,79 @@ export default function PitchDeckEditor() {
 
   // Slide Operations
   const handleAddSlide = () => {
-    const newSlide = { id: Date.now(), number: slides.length + 1, title: 'New Slide', type: 'content' };
-    setSlides([...slides, newSlide]);
+    const newSlide: Slide = { id: Date.now(), number: slides.length + 1, title: 'New Slide', type: 'content' };
+    setSlides((prev) => [...prev, newSlide]);
     setActiveSlideIndex(slides.length);
   };
 
   const handleDeleteSlide = () => {
     if (slides.length <= 1) return;
-    const newSlides = slides.filter((_, i) => i !== activeSlideIndex);
-    setSlides(newSlides);
-    setActiveSlideIndex(Math.max(0, activeSlideIndex - 1));
+    setSlides((prev) => prev.filter((_, i) => i !== activeSlideIndex));
+    setActiveSlideIndex((prev) => Math.max(0, prev - 1));
   };
 
   const handleDuplicateSlide = () => {
-    const slideToCopy = slides[activeSlideIndex];
-    const newSlide = { ...slideToCopy, id: Date.now(), number: slides.length + 1, title: `${slideToCopy.title} (Copy)` };
-    const newSlides = [...slides];
-    newSlides.splice(activeSlideIndex + 1, 0, newSlide);
-    setSlides(newSlides);
-    setActiveSlideIndex(activeSlideIndex + 1);
+    setSlides((prev) => {
+      const slideToCopy = prev[activeSlideIndex];
+      if (!slideToCopy) return prev;
+      const newSlide: Slide = { ...slideToCopy, id: Date.now(), number: prev.length + 1, title: `${slideToCopy.title} (Copy)` };
+      const next = [...prev];
+      next.splice(activeSlideIndex + 1, 0, newSlide);
+      return next;
+    });
+    setActiveSlideIndex((prev) => prev + 1);
+  };
+
+  const updateActiveSlide = (patch: Partial<Slide>) => {
+    setSlides((prev) => prev.map((s, i) => (i === activeSlideIndex ? { ...s, ...patch } : s)));
+  };
+
+  const updateActiveSlideContent = (patch: Record<string, unknown>) => {
+    setSlides((prev) =>
+      prev.map((s, i) => (i === activeSlideIndex ? { ...s, content: { ...(s.content ?? {}), ...patch } } : s))
+    );
+  };
+
+  const handleReorderDrop = (targetIndex: number) => {
+    setSlides((prev) => {
+      if (dragIndex === null || dragIndex === targetIndex) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(dragIndex, 1);
+      next.splice(targetIndex, 0, moved);
+      return next.map((s, idx) => ({ ...s, number: idx + 1 }));
+    });
+    if (dragIndex !== null) setActiveSlideIndex(targetIndex);
+    setDragIndex(null);
+    setDragOverIndex(null);
   };
 
   const handleDownload = async () => {
     setIsDownloading(true);
-    setDownloadError('');
+    setActionError('');
     try {
       await downloadPitchDeckPptx(backendState, deckTitle);
     } catch (err: any) {
       const msg = err?.message ?? 'Failed to download PPTX. Please try again.';
-      setDownloadError(msg);
-      setTimeout(() => setDownloadError(''), 6000);
+      setActionError(msg);
+      setTimeout(() => setActionError(''), 6000);
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const handleRegenerate = async () => {
+    if (!activeSlide) return;
+    setIsRegenerating(true);
+    setActionError('');
+    try {
+      const suggestion = await regenerateSlideContent(backendState, activeSlide.title ?? 'Slide', activeSlide.type);
+      updateActiveSlideContent({ text: suggestion.text, bullets: suggestion.bullets });
+    } catch (err: any) {
+      const msg = err?.message ?? 'Failed to regenerate slide content. Please try again.';
+      setActionError(msg);
+      setTimeout(() => setActionError(''), 6000);
+    } finally {
+      setIsRegenerating(false);
     }
   };
 
@@ -156,14 +217,46 @@ export default function PitchDeckEditor() {
       );
     }
 
-    // Default content slide
+    // Default content slide — render the generated slide content when present
+    const content = (slide?.content ?? {}) as Record<string, unknown>;
+    const bodyText = typeof content.text === 'string' ? content.text
+      : typeof content.body === 'string' ? content.body
+      : typeof content.summary === 'string' ? content.summary
+      : undefined;
+    const bulletsRaw = content.bullets ?? content.points ?? content.items;
+    const bullets = Array.isArray(bulletsRaw) ? bulletsRaw.map(String) : undefined;
+    const extraStrings = Object.entries(content)
+      .filter(([key, val]) => typeof val === 'string' && !['text', 'body', 'summary'].includes(key))
+      .map(([, val]) => val as string);
+    const hasContent = Boolean(bodyText) || Boolean(bullets?.length) || extraStrings.length > 0;
+
     return (
-      <div className="flex-1 w-full bg-[#0A0A0F]/50 backdrop-blur-md border border-white/5 rounded-[24px] p-8 z-10 animate-fadeInUp flex flex-col">
-        <div className="w-full h-12 bg-white/5 rounded-lg mb-4 animate-pulse"></div>
-        <div className="w-3/4 h-12 bg-white/5 rounded-lg mb-8 animate-pulse"></div>
-        <div className="w-full flex-1 border-2 border-dashed border-white/10 rounded-xl flex items-center justify-center">
-          <span className="text-[#555566] font-bold">Content Area</span>
-        </div>
+      <div className="flex-1 w-full bg-[#0A0A0F]/50 backdrop-blur-md border border-white/5 rounded-[24px] p-8 z-10 animate-fadeInUp flex flex-col gap-4 overflow-y-auto custom-scrollbar">
+        {hasContent ? (
+          <>
+            {bodyText && (
+              <p className="text-lg lg:text-xl text-[#F0F0F0]/90 leading-relaxed">{bodyText}</p>
+            )}
+            {bullets && bullets.length > 0 && (
+              <ul className="flex flex-col gap-3 list-disc list-inside text-[#F0F0F0]/90">
+                {bullets.map((item, i) => (
+                  <li key={i} className="text-base lg:text-lg">{item}</li>
+                ))}
+              </ul>
+            )}
+            {!bodyText && extraStrings.length > 0 && (
+              <ul className="flex flex-col gap-3 list-disc list-inside text-[#F0F0F0]/90">
+                {extraStrings.map((item, i) => (
+                  <li key={i} className="text-base lg:text-lg">{item}</li>
+                ))}
+              </ul>
+            )}
+          </>
+        ) : (
+          <div className="w-full flex-1 border-2 border-dashed border-white/10 rounded-xl flex items-center justify-center">
+            <span className="text-[#555566] font-bold">No content generated for this slide yet — try AI Regenerate</span>
+          </div>
+        )}
       </div>
     );
   };
@@ -211,13 +304,13 @@ export default function PitchDeckEditor() {
         </div>
       </div>
 
-      {/* Download error toast */}
-      {downloadError && (
+      {/* Action error toast */}
+      {actionError && (
         <div className="fixed bottom-6 right-6 z-[9999] animate-slideInRight">
           <div className="glass-strong px-5 py-3 flex items-center gap-3 rounded-2xl border border-[#FF4D4F]/30 shadow-2xl max-w-md">
             <div className="w-2 h-2 rounded-full bg-[#FF4D4F] shrink-0 animate-pulse" />
-            <span className="text-sm font-semibold text-[#FF4D4F]">{downloadError}</span>
-            <button onClick={() => setDownloadError('')} className="ml-auto text-[#888899] hover:text-white text-lg leading-none">&times;</button>
+            <span className="text-sm font-semibold text-[#FF4D4F]">{actionError}</span>
+            <button onClick={() => setActionError('')} className="ml-auto text-[#888899] hover:text-white text-lg leading-none">&times;</button>
           </div>
         </div>
       )}
@@ -233,14 +326,20 @@ export default function PitchDeckEditor() {
           </div>
           <div className="p-3 flex flex-col gap-3 flex-1">
             {slides.map((slide, i) => (
-              <div 
-                key={slide.id} 
+              <div
+                key={slide.id}
                 onClick={() => setActiveSlideIndex(i)}
-                className={`relative cursor-pointer group rounded-xl transition-all duration-200 ${(activeSlideIndex === i) ? 'opacity-100 bg-white/5 p-2' : 'opacity-60 hover:opacity-100 p-2'}`}
+                draggable
+                onDragStart={() => setDragIndex(i)}
+                onDragOver={(e) => { e.preventDefault(); setDragOverIndex(i); }}
+                onDragLeave={() => setDragOverIndex((cur) => (cur === i ? null : cur))}
+                onDrop={() => handleReorderDrop(i)}
+                onDragEnd={() => { setDragIndex(null); setDragOverIndex(null); }}
+                className={`relative cursor-grab active:cursor-grabbing group rounded-xl transition-all duration-200 ${(activeSlideIndex === i) ? 'opacity-100 bg-white/5 p-2' : 'opacity-60 hover:opacity-100 p-2'} ${dragIndex === i ? 'opacity-30' : ''} ${dragOverIndex === i && dragIndex !== null && dragIndex !== i ? 'ring-2 ring-[#00D4AA] ring-offset-2 ring-offset-[#0A0A0F]' : ''}`}
               >
                 <div className="text-[10px] font-mono text-[#888899] mb-1.5 flex justify-between items-center">
                   <span>{i + 1}</span>
-                  <MoveVertical className="w-3 h-3 text-[#555566] opacity-0 group-hover:opacity-100 cursor-grab" />
+                  <MoveVertical className="w-3 h-3 text-[#555566] opacity-0 group-hover:opacity-100" />
                 </div>
                 <div className={`aspect-video bg-[#111118] flex items-center justify-center p-2 text-center rounded-lg transition-all duration-300 ${activeSlideIndex === i ? 'border-2 border-[#6C47FF] shadow-[0_0_15px_rgba(108,71,255,0.2)]' : 'border border-white/10 group-hover:border-[#888899]'}`}>
                   <span className="text-[10px] font-bold text-[#F0F0F0] leading-tight truncate px-1">{slide.title}</span>
@@ -332,27 +431,19 @@ export default function PitchDeckEditor() {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-[#888899] uppercase tracking-widest mb-2">Heading</label>
-                <input 
-                  type="text" 
-                  value={activeSlide?.title ?? ''} 
-                  onChange={(e) => {
-                    const newSlides = [...slides];
-                    newSlides[activeSlideIndex].title = e.target.value;
-                    setSlides(newSlides);
-                  }}
-                  className="w-full bg-[#0A0A0F] border border-[#111118] text-[#F0F0F0] text-sm px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#6C47FF] transition-colors" 
+                <input
+                  type="text"
+                  value={activeSlide?.title ?? ''}
+                  onChange={(e) => updateActiveSlide({ title: e.target.value })}
+                  className="w-full bg-[#0A0A0F] border border-[#111118] text-[#F0F0F0] text-sm px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#6C47FF] transition-colors"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-[#888899] uppercase tracking-widest mb-2">Layout Type</label>
-                <select 
+                <select
                   value={activeSlide?.type ?? 'content'}
-                  onChange={(e) => {
-                    const newSlides = [...slides];
-                    newSlides[activeSlideIndex].type = e.target.value;
-                    setSlides(newSlides);
-                  }}
+                  onChange={(e) => updateActiveSlide({ type: e.target.value })}
                   className="w-full bg-[#0A0A0F] border border-[#111118] text-[#F0F0F0] text-sm px-4 py-2.5 rounded-xl focus:outline-none focus:border-[#6C47FF] transition-colors cursor-pointer"
                 >
                   <option value="title">Title Slide</option>
@@ -363,15 +454,42 @@ export default function PitchDeckEditor() {
               </div>
             </div>
 
+            {/* Content — only relevant for non-title, non-market slides */}
+            {activeSlide?.type !== 'title' && activeSlide?.type !== 'market' && (
+              <div className="space-y-4 border-t border-[#0A0A0F] pt-6">
+                <div>
+                  <label className="block text-xs font-bold text-[#888899] uppercase tracking-widest mb-2">Body Text</label>
+                  <textarea
+                    value={(activeSlide?.content?.text as string) ?? ''}
+                    onChange={(e) => updateActiveSlideContent({ text: e.target.value })}
+                    placeholder="A short paragraph for this slide..."
+                    className="w-full min-h-[80px] bg-[#0A0A0F] border border-[#111118] text-[#F0F0F0] text-sm px-4 py-3 rounded-xl focus:outline-none focus:border-[#6C47FF] transition-colors resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#888899] uppercase tracking-widest mb-2 flex items-center justify-between">
+                    Bullet Points
+                    <span className="normal-case text-[10px] font-normal opacity-70">One per line</span>
+                  </label>
+                  <textarea
+                    value={((activeSlide?.content?.bullets as string[]) ?? []).join('\n')}
+                    onChange={(e) => updateActiveSlideContent({ bullets: e.target.value.split('\n').filter((line) => line.trim().length > 0) })}
+                    placeholder={'Key point one\nKey point two'}
+                    className="w-full min-h-[100px] bg-[#0A0A0F] border border-[#111118] text-[#F0F0F0] text-sm px-4 py-3 rounded-xl focus:outline-none focus:border-[#6C47FF] transition-colors resize-none"
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Speaker Notes */}
             <div className="flex-1 flex flex-col border-t border-[#0A0A0F] pt-6">
               <label className="block text-xs font-bold text-[#888899] uppercase tracking-widest mb-2 flex items-center justify-between">
                 Speaker Notes
                 <span className="normal-case text-[10px] font-normal opacity-70">Visible in presenter mode</span>
               </label>
-              <textarea 
-                value={speakerNotes[activeSlide?.id ?? 0] ?? ''}
-                onChange={(e) => setSpeakerNotes({...speakerNotes, [activeSlide?.id ?? 0]: e.target.value})}
+              <textarea
+                value={(activeSlide?.content?.notes as string) ?? ''}
+                onChange={(e) => updateActiveSlideContent({ notes: e.target.value })}
                 placeholder="Add notes for your presentation..."
                 className="w-full flex-1 min-h-[150px] bg-[#0A0A0F] border border-[#111118] text-[#F0F0F0] text-sm px-4 py-3 rounded-xl focus:outline-none focus:border-[#6C47FF] transition-colors resize-none"
               />
@@ -379,8 +497,13 @@ export default function PitchDeckEditor() {
           </div>
 
           <div className="p-4 border-t border-[#0A0A0F] bg-[#0A0A0F]/50">
-            <button className="w-full py-3 bg-[#6C47FF]/10 border border-[#6C47FF]/30 text-[#C9BEFF] font-bold text-sm hover:bg-[#6C47FF] hover:text-white rounded-xl transition-all flex items-center justify-center gap-2">
-              <RefreshCw className="w-4 h-4" /> AI Regenerate
+            <button
+              onClick={handleRegenerate}
+              disabled={isRegenerating}
+              className="w-full py-3 bg-[#6C47FF]/10 border border-[#6C47FF]/30 text-[#C9BEFF] font-bold text-sm hover:bg-[#6C47FF] hover:text-white rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isRegenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              {isRegenerating ? 'Regenerating…' : 'AI Regenerate'}
             </button>
           </div>
         </div>

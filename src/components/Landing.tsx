@@ -185,13 +185,13 @@ export default function Landing() {
         {/* ── Input Area ── */}
         <div className="w-full max-w-3xl relative animate-fadeInUp delay-300">
           <div className="relative group">
-            <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-[#6C47FF] via-[#00D4AA] to-[#6C47FF] opacity-40 group-focus-within:opacity-80 blur-sm transition-opacity duration-500 animate-gradientShift" style={{ backgroundSize: '200% 200%' }} />
+            <div className="absolute -inset-[1px] rounded-full bg-gradient-to-r from-[#6C47FF] via-[#00D4AA] to-[#6C47FF] opacity-40 group-focus-within:opacity-80 blur-sm transition-opacity duration-500 animate-gradientShift" style={{ backgroundSize: '200% 200%' }} />
             <textarea
               value={idea}
               onChange={(e) => setIdea(e.target.value)}
               placeholder="Describe your startup idea in detail..."
               maxLength={500}
-              className="relative w-full h-[120px] bg-[#111118]/95 text-[#F0F0F0] placeholder-[#555566] px-8 py-6 focus:outline-none resize-none text-lg font-medium rounded-2xl border border-transparent z-[1]"
+              className="relative w-full h-[120px] bg-[#111118]/95 text-[#F0F0F0] placeholder-[#555566] px-10 py-6 focus:outline-none resize-none text-lg font-medium rounded-full border border-transparent z-[1]"
               style={{ backdropFilter: 'blur(20px)' }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -207,7 +207,7 @@ export default function Landing() {
                 <button
                   key={tag}
                   onClick={() => setIdea((prev) => prev ? `${prev} [${tag}]` : tag)}
-                  className="glass px-4 py-1.5 text-xs font-bold text-[#888899] hover:text-[#00D4AA] hover:border-[#00D4AA]/40 transition-all duration-300 rounded-lg"
+                  className="glass px-4 py-1.5 text-xs font-bold text-[#888899] hover:text-[#00D4AA] hover:border-[#00D4AA]/40 transition-all duration-300 rounded-full"
                 >
                   {tag}
                 </button>
@@ -221,7 +221,7 @@ export default function Landing() {
         <button
           onClick={handleGenerate}
           disabled={!idea.trim() || status === 'running'}
-          className="mt-8 flex justify-center items-center gap-3 px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#6C47FF] to-[#8B6AFF] text-white font-black text-sm uppercase tracking-widest btn-shimmer hover:shadow-[0_8px_32px_rgba(108,71,255,0.4)] hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none animate-fadeInUp delay-400"
+          className="mt-8 flex justify-center items-center gap-3 px-8 py-3.5 rounded-full bg-gradient-to-r from-[#6C47FF] to-[#8B6AFF] text-white font-black text-sm uppercase tracking-widest btn-shimmer hover:shadow-[0_8px_32px_rgba(108,71,255,0.4)] hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none animate-fadeInUp delay-400"
         >
           {status === 'running' ? (
             <>

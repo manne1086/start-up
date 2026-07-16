@@ -35,7 +35,13 @@ body {
   border-radius: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #00D4AA; 
+  background: #00D4AA;
+}
+
+/* ── Scrobble: marks a log/feed container that auto-scrolls to its newest entry ── */
+.scrobble {
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
 }
 
 /* ── Glow utilities ──────────────────────────────────────── */
@@ -79,17 +85,19 @@ body {
     0 0 24px rgba(108, 71, 255, 0.18);
 }
 
-/* ── Proper border-radius (NOT forcing 50px on everything) ── */
-button {
-  border-radius: 12px;
-  transition: box-shadow 220ms ease, transform 220ms ease, filter 220ms ease, background 220ms ease, color 220ms ease, border-color 220ms ease;
-}
+/* ── Default border-radius baseline (overridable per-component via Tailwind rounded-* classes) ── */
+@layer base {
+  button {
+    border-radius: 12px;
+    transition: box-shadow 220ms ease, transform 220ms ease, filter 220ms ease, background 220ms ease, color 220ms ease, border-color 220ms ease;
+  }
 
-input,
-select,
-textarea {
-  border-radius: 14px;
-  transition: border-color 220ms ease, box-shadow 220ms ease;
+  input,
+  select,
+  textarea {
+    border-radius: 14px;
+    transition: border-color 220ms ease, box-shadow 220ms ease;
+  }
 }
 
 /* Directional borders should not be rounded */

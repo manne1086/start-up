@@ -131,6 +131,119 @@ function inferTechStack(idea: string) {
   ];
 }
 
+type TechStackItem = { layer: string; technology: string; reason: string; complexity: 'Low' | 'Medium' | 'High' };
+type ArchNode = { id: string; label: string; type: string; layer: string; description: string };
+type ArchEdge = { from: string; to: string; label: string };
+type ArchLayer = { id: string; label: string; order: number };
+
+const LAYER_BUCKETS: Array<{ match: RegExp; id: string; label: string; order: number }> = [
+  { match: /front|ui|client|web|mobile/i, id: 'frontend', label: 'Frontend', order: 1 },
+  { match: /back|api|server|service|orchestrat|auth|cache/i, id: 'backend', label: 'Backend', order: 2 },
+  { match: /data|database|db|storage/i, id: 'data', label: 'Data', order: 3 },
+  { match: /ai|ml|llm|model|agent/i, id: 'ai', label: 'AI', order: 4 },
+];
+
+function bucketFor(layer: string) {
+  return LAYER_BUCKETS.find((b) => b.match.test(layer)) ?? { id: 'other', label: 'Other', order: 5 };
+}
+
+function slugify(value: string, taken: Set<string>) {
+  const base = value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'node';
+  let id = base;
+  let n = 2;
+  while (taken.has(id)) id = `${base}-${n++}`;
+  taken.add(id);
+  return id;
+}
+
+const FALLBACK_ARCHITECTURE = {
+  title: 'MVP Architecture',
+  layout: 'layered' as const,
+  theme: 'excalidraw-sketch' as const,
+  layers: [
+    { id: 'frontend', label: 'Frontend', order: 1 },
+    { id: 'backend', label: 'Backend', order: 2 },
+    { id: 'data', label: 'Data', order: 3 },
+    { id: 'ai', label: 'AI', order: 4 },
+  ],
+  nodes: [
+    { id: 'web', label: 'Next.js', type: 'frontend', layer: 'frontend', description: 'User interface and landing pages.' },
+    { id: 'api', label: 'FastAPI', type: 'api', layer: 'backend', description: 'Main application API and orchestration.' },
+    { id: 'auth', label: 'Auth', type: 'auth', layer: 'backend', description: 'Login and session handling.' },
+    { id: 'db', label: 'PostgreSQL', type: 'database', layer: 'data', description: 'System of record for core entities.' },
+    { id: 'cache', label: 'Redis', type: 'cache', layer: 'data', description: 'Session and response caching.' },
+    { id: 'storage', label: 'S3', type: 'storage', layer: 'data', description: 'File and artifact storage.' },
+    { id: 'llm', label: 'LLM API', type: 'llm', layer: 'ai', description: 'Reasoning, generation, and summarization.' },
+  ],
+  edges: [
+    { from: 'web', to: 'api', label: 'API' },
+    { from: 'web', to: 'auth', label: 'Login' },
+    { from: 'api', to: 'db', label: 'Read / Write' },
+    { from: 'api', to: 'cache', label: 'Cache' },
+    { from: 'api', to: 'storage', label: 'Files' },
+    { from: 'api', to: 'llm', label: 'Prompt' },
+  ],
+};
+
+// Builds the architecture diagram from the actual AI-generated recommended stack,
+// instead of a static placeholder, so the diagram reflects the real output.
+function buildArchitectureFromStack(stack: TechStackItem[]) {
+  const takenIds = new Set<string>();
+  const nodes: ArchNode[] = stack.map((item) => {
+    const bucket = bucketFor(item.layer);
+    return {
+      id: slugify(item.technology, takenIds),
+      label: item.technology,
+      type: bucket.id,
+      layer: bucket.id,
+      description: item.reason,
+    };
+  });
+
+  const layerMap = new Map<string, ArchLayer>();
+  nodes.forEach((n) => {
+    if (layerMap.has(n.layer)) return;
+    const bucket = LAYER_BUCKETS.find((b) => b.id === n.layer);
+    layerMap.set(n.layer, bucket ? { id: bucket.id, label: bucket.label, order: bucket.order } : { id: n.layer, label: n.layer, order: 5 });
+  });
+  const layers = Array.from(layerMap.values()).sort((a, b) => a.order - b.order);
+
+  const byLayer = (layerId: string) => nodes.filter((n) => n.layer === layerId);
+  const frontend = byLayer('frontend');
+  const backend = byLayer('backend');
+  const data = byLayer('data');
+  const ai = byLayer('ai');
+  const other = byLayer('other');
+
+  const edges: ArchEdge[] = [];
+  const connect = (from: ArchNode[], to: ArchNode[], label: string) => {
+    from.forEach((f) => to.forEach((t) => edges.push({ from: f.id, to: t.id, label })));
+  };
+
+  if (frontend.length && backend.length) connect(frontend, backend, 'API');
+  if (backend.length && data.length) connect(backend, data, 'Read / Write');
+  if (backend.length && ai.length) connect(backend, ai, 'Prompt');
+  else if (!backend.length && frontend.length && ai.length) connect(frontend, ai, 'Prompt');
+  if (backend.length && other.length) connect(backend, other, 'Uses');
+
+  // No layered structure could be inferred (e.g. a single unusual layer name) —
+  // fall back to a simple sequential chain so the diagram is still connected.
+  if (edges.length === 0 && nodes.length > 1) {
+    for (let i = 0; i < nodes.length - 1; i++) {
+      edges.push({ from: nodes[i].id, to: nodes[i + 1].id, label: '' });
+    }
+  }
+
+  return {
+    title: 'MVP Architecture',
+    layout: 'layered' as const,
+    theme: 'excalidraw-sketch' as const,
+    layers: layers.length ? layers : [{ id: 'stack', label: 'Stack', order: 1 }],
+    nodes,
+    edges,
+  };
+}
+
 function inferRoadmap(idea: string) {
   const lower = idea.toLowerCase();
   const hasAi = lower.includes('ai') || lower.includes('agent') || lower.includes('assistant');
@@ -156,34 +269,9 @@ export function buildVisualizationData(backendState: BackendState): Visualizatio
       }))
     : inferTechStack(idea);
 
-  const architecture = {
-    title: 'MVP Architecture',
-    layout: 'layered' as const,
-    theme: 'excalidraw-sketch' as const,
-    layers: [
-      { id: 'frontend', label: 'Frontend', order: 1 },
-      { id: 'backend', label: 'Backend', order: 2 },
-      { id: 'data', label: 'Data', order: 3 },
-      { id: 'ai', label: 'AI', order: 4 },
-    ],
-    nodes: [
-      { id: 'web', label: 'Next.js', type: 'frontend', layer: 'frontend', description: 'User interface and landing pages.' },
-      { id: 'api', label: 'FastAPI', type: 'api', layer: 'backend', description: 'Main application API and orchestration.' },
-      { id: 'auth', label: 'Auth', type: 'auth', layer: 'backend', description: 'Login and session handling.' },
-      { id: 'db', label: 'PostgreSQL', type: 'database', layer: 'data', description: 'System of record for core entities.' },
-      { id: 'cache', label: 'Redis', type: 'cache', layer: 'data', description: 'Session and response caching.' },
-      { id: 'storage', label: 'S3', type: 'storage', layer: 'data', description: 'File and artifact storage.' },
-      { id: 'llm', label: 'LLM API', type: 'llm', layer: 'ai', description: 'Reasoning, generation, and summarization.' },
-    ],
-    edges: [
-      { from: 'web', to: 'api', label: 'API' },
-      { from: 'web', to: 'auth', label: 'Login' },
-      { from: 'api', to: 'db', label: 'Read / Write' },
-      { from: 'api', to: 'cache', label: 'Cache' },
-      { from: 'api', to: 'storage', label: 'Files' },
-      { from: 'api', to: 'llm', label: 'Prompt' },
-    ],
-  };
+  const architecture = Array.isArray(mvp?.recommended_stack) && mvp.recommended_stack.length
+    ? buildArchitectureFromStack(recommendedTechStack)
+    : FALLBACK_ARCHITECTURE;
 
   const competitors = normalizeCompetitors(market);
   const marketResearch = {

@@ -32,6 +32,7 @@ export default function ResultsDashboard() {
   const { backendState } = useGeneration();
   const viz = buildVisualizationData(backendState);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [pptxLoading, setPptxLoading] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
 
   const ideaName = backendState?.startup_name || backendState?.idea?.toString()?.slice(0, 32) || 'Startup';
@@ -132,7 +133,16 @@ export default function ResultsDashboard() {
   };
 
   const handleDownloadPptx = async () => {
-    await downloadPitchDeckPptx(backendState, ideaName);
+    setPptxLoading(true);
+    try {
+      await downloadPitchDeckPptx(backendState, ideaName);
+    } catch (err) {
+      console.error('[PPTX] download failed:', err);
+      const message = err instanceof Error ? err.message : 'Failed to generate PPTX.';
+      showToast(message);
+    } finally {
+      setPptxLoading(false);
+    }
   };
 
   const chartData = financials?.projections?.length
@@ -354,9 +364,10 @@ export default function ResultsDashboard() {
                         className="flex-1 py-2.5 bg-transparent border-2 border-[#1E1E28] text-[#888899] font-bold text-xs hover:border-[#00D4AA] hover:text-[#00D4AA] rounded-xl transition-colors flex items-center justify-center gap-2">
                   <FileText className="w-3 h-3" /> View
                 </button>
-                <button onClick={(e) => { e.stopPropagation(); handleDownloadPptx(); }}
-                        className="flex-1 py-2.5 bg-[#6C47FF]/10 border-2 border-[#6C47FF]/30 text-[#6C47FF] font-bold text-xs hover:bg-[#6C47FF] hover:text-white rounded-xl transition-colors flex items-center justify-center gap-2">
-                  <Download className="w-3 h-3" /> .pptx
+                <button onClick={(e) => { e.stopPropagation(); handleDownloadPptx(); }} disabled={pptxLoading}
+                        className="flex-1 py-2.5 bg-[#6C47FF]/10 border-2 border-[#6C47FF]/30 text-[#6C47FF] font-bold text-xs hover:bg-[#6C47FF] hover:text-white rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                  {pptxLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
+                  {pptxLoading ? 'Generating…' : '.pptx'}
                 </button>
               </div>
             </div>

@@ -1,6 +1,7 @@
 from graph.state import AgentLog, BrandTokens, PitchDeckData, PitchSlide, StartupState
 from services.groq_client import structured_reasoning
 from services.pitch_generator import generate_pitch_deck
+from services.stream_manager import log_event
 
 
 async def pitch_deck(state: StartupState) -> StartupState:
@@ -31,5 +32,5 @@ Return PitchDeckData with brand tokens and at least 6 slides.
     state.pitch_deck = deck
     generate_pitch_deck(state.pitch_deck)
     state.completed_steps.append("pitch_deck")
-    state.agent_logs.append(AgentLog(agent="Pitch Deck", message="Pitch deck data generated.", status="success"))
+    await log_event(state, AgentLog(agent="Pitch Deck", message="Pitch deck data generated.", status="success"))
     return state

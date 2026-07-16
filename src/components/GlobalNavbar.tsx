@@ -46,18 +46,19 @@ export default function GlobalNavbar() {
             How it works
             <div className={`absolute bottom-0 left-0 h-1 bg-[#6C47FF] rounded-t-full transition-all duration-300 ${screen === 'mvp' ? 'w-full shadow-[0_-2px_10px_rgba(108,71,255,0.5)]' : 'w-0 group-hover:w-full'}`}></div>
           </button>
-          <button 
-            className="h-full relative flex items-center transition-colors hover:text-white group"
+          <button
+            onClick={() => navigate('home')}
+            className={`h-full relative flex items-center transition-colors hover:text-white group ${screen === 'home' ? 'text-white' : ''}`}
           >
-            Pricing
-            <div className="absolute bottom-0 left-0 h-1 bg-[#6C47FF] rounded-t-full transition-all duration-300 w-0 group-hover:w-full"></div>
+            New Idea
+            <div className={`absolute bottom-0 left-0 h-1 bg-[#6C47FF] rounded-t-full transition-all duration-300 ${screen === 'home' ? 'w-full shadow-[0_-2px_10px_rgba(108,71,255,0.5)]' : 'w-0 group-hover:w-full'}`}></div>
           </button>
-          <button 
-            onClick={() => navigate('components')}
-            className={`h-full relative flex items-center transition-colors hover:text-white group ${screen === 'components' ? 'text-white' : ''}`}
+          <button
+            onClick={() => navigate('settings')}
+            className={`h-full relative flex items-center transition-colors hover:text-white group ${screen === 'settings' ? 'text-white' : ''}`}
           >
-            UI Kit
-            <div className={`absolute bottom-0 left-0 h-1 bg-[#6C47FF] rounded-t-full transition-all duration-300 ${screen === 'components' ? 'w-full shadow-[0_-2px_10px_rgba(108,71,255,0.5)]' : 'w-0 group-hover:w-full'}`}></div>
+            Settings
+            <div className={`absolute bottom-0 left-0 h-1 bg-[#6C47FF] rounded-t-full transition-all duration-300 ${screen === 'settings' ? 'w-full shadow-[0_-2px_10px_rgba(108,71,255,0.5)]' : 'w-0 group-hover:w-full'}`}></div>
           </button>
         </div>
       </div>

@@ -42,6 +42,7 @@ type GenerationContextType = {
   startGeneration: (idea: string) => Promise<string>;
   approveRun: () => Promise<GenerationState | null>;
   patchRun: (patch: Record<string, unknown>) => Promise<GenerationState | null>;
+  updatePitchDeck: (updater: (deck: Record<string, unknown>) => Record<string, unknown>) => void;
   clearRun: () => void;
 };
 
@@ -54,6 +55,7 @@ const GenerationContext = createContext<GenerationContextType>({
   startGeneration: async () => '',
   approveRun: async () => null,
   patchRun: async () => null,
+  updatePitchDeck: () => {},
   clearRun: () => {},
 });
 
@@ -316,6 +318,19 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
     return applyState(data.state ?? null);
   };
 
+  // Applies a local edit to the pitch deck (editor changes) without a round trip
+  // to the backend, so PDF/PPTX export and any other reader of `backendState`
+  // immediately reflect the edit. Persisted via the syncStored effect below.
+  const updatePitchDeck = (updater: (deck: Record<string, unknown>) => Record<string, unknown>) => {
+    setBackendState((current) => {
+      const currentDeck = (current?.pitch_deck as Record<string, unknown>) ?? {};
+      const nextDeck = updater(currentDeck);
+      const next = normalizeState({ ...(current ?? {}), pitch_deck: nextDeck }, threadId, idea, status);
+      syncStored(threadId, idea, status, next);
+      return next;
+    });
+  };
+
   const clearRun = () => {
     closeStream();
     setThreadId(null);
@@ -366,6 +381,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
         startGeneration,
         approveRun,
         patchRun,
+        updatePitchDeck,
         clearRun,
       }}
     >

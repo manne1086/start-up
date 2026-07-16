@@ -1,5 +1,6 @@
 from graph.state import AgentLog, MVPData, RoadmapPhase, StackItem, StartupState
 from services.groq_client import structured_reasoning
+from services.stream_manager import log_event
 
 
 async def mvp_architecture(state: StartupState) -> StartupState:
@@ -25,5 +26,5 @@ Return a complete MVPData object.
         )
     state.mvp = mvp
     state.completed_steps.append("mvp_architecture")
-    state.agent_logs.append(AgentLog(agent="MVP Architecture", message="Architecture defined.", status="success"))
+    await log_event(state, AgentLog(agent="MVP Architecture", message="Architecture defined.", status="success"))
     return state

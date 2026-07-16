@@ -1,5 +1,6 @@
 from graph.state import AgentLog, Competitor, MarketData, StartupState
 from services.groq_client import structured_reasoning
+from services.stream_manager import log_event
 from services.tavily_client import search
 
 
@@ -13,43 +14,46 @@ async def market_research(state: StartupState) -> StartupState:
     all_results = []
 
     for query in seed_queries:
-        # Emit a log showing the search query being executed
-        state.agent_logs.append(
+        # Emit a log showing the search query being executed, live, as it starts
+        await log_event(
+            state,
             AgentLog(
                 agent="Market Research",
                 message=f"Searching external sources for market intelligence...",
                 status="info",
                 search_query=query,
                 thought=f"Querying Tavily to gather competitive landscape and market sizing data for: {query}",
-            )
+            ),
         )
 
         results = await search(query, max_results=4)
 
-        # Emit individual logs for each result with its URL
+        # Emit individual logs for each result with its URL, live, as each is processed
         for item in results:
             url = item.get("url", "")
             title = item.get("title", "Search result")
             if url:
-                state.agent_logs.append(
+                await log_event(
+                    state,
                     AgentLog(
                         agent="Market Research",
                         message=f"Found: {title}",
                         status="info",
                         url=url,
-                    )
+                    ),
                 )
 
         all_results.extend(results)
 
     # Emit a summary log
-    state.agent_logs.append(
+    await log_event(
+        state,
         AgentLog(
             agent="Market Research",
             message=f"Collected {len(all_results)} results across {len(seed_queries)} search queries. Synthesizing market intelligence...",
             status="info",
             thought="Analyzing search results to extract TAM/SAM/SOM, competitors, and market gaps.",
-        )
+        ),
     )
 
     research_blob = "\n".join(
@@ -94,11 +98,12 @@ Make the TAM/SAM/SOM consistent with the evidence and mention any uncertainty in
         )
     state.market = model
     state.completed_steps.append("market_research")
-    state.agent_logs.append(
+    await log_event(
+        state,
         AgentLog(
             agent="Market Research",
             message=f"Market analysis complete — {len(all_results)} Tavily results synthesized across {len(seed_queries)} queries.",
             status="success",
-        )
+        ),
     )
     return state

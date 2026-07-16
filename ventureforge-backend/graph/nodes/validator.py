@@ -2,6 +2,7 @@ from pydantic import BaseModel
 
 from graph.state import AgentLog, StartupState
 from services.groq_client import structured_validation
+from services.stream_manager import log_event
 
 
 class ValidationResult(BaseModel):
@@ -22,7 +23,7 @@ Market data:
         result = ValidationResult(is_valid=True, notes="Fallback validator accepted the market data.")
     state.completed_steps.append("validator_market")
     status = "success" if result.is_valid else "warning"
-    state.agent_logs.append(AgentLog(agent="Validator", message=f"Market validation: {result.notes}", status=status))
+    await log_event(state, AgentLog(agent="Validator", message=f"Market validation: {result.notes}", status=status))
     return state
 
 
@@ -39,6 +40,6 @@ Financial data:
         result = ValidationResult(is_valid=True, notes="Fallback validator accepted the financial model.")
     state.completed_steps.append("validator_financial")
     status = "success" if result.is_valid else "warning"
-    state.agent_logs.append(AgentLog(agent="Validator", message=f"Financial validation: {result.notes}", status=status))
+    await log_event(state, AgentLog(agent="Validator", message=f"Financial validation: {result.notes}", status=status))
     return state
 

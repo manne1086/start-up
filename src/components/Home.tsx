@@ -53,13 +53,13 @@ export default function Home() {
         {/* Input */}
         <div className="w-full max-w-3xl relative animate-fadeInUp delay-200">
           <div className="relative group">
-            <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-r from-[#6C47FF] via-[#00D4AA] to-[#6C47FF] opacity-30 group-focus-within:opacity-70 blur-sm transition-opacity duration-500 animate-gradientShift" style={{ backgroundSize: '200% 200%' }} />
+            <div className="absolute -inset-[1px] rounded-full bg-gradient-to-r from-[#6C47FF] via-[#00D4AA] to-[#6C47FF] opacity-30 group-focus-within:opacity-70 blur-sm transition-opacity duration-500 animate-gradientShift" style={{ backgroundSize: '200% 200%' }} />
             <textarea
               value={idea}
               onChange={(e) => setIdea(e.target.value)}
               placeholder="e.g. An AI-powered resume builder that helps job seekers craft ATS-optimized resumes..."
               maxLength={500}
-              className="relative w-full h-[130px] bg-[#111118]/95 text-[#F0F0F0] placeholder-[#555566] px-6 py-5 focus:outline-none resize-none text-base font-medium rounded-2xl border border-transparent z-[1] leading-relaxed"
+              className="relative w-full h-[130px] bg-[#111118]/95 text-[#F0F0F0] placeholder-[#555566] px-10 py-5 focus:outline-none resize-none text-base font-medium rounded-full border border-transparent z-[1] leading-relaxed"
               style={{ backdropFilter: 'blur(20px)' }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -82,7 +82,7 @@ export default function Home() {
         <button
           onClick={handleGenerate}
           disabled={!idea.trim() || status === 'running'}
-          className="mt-8 group px-12 py-4 rounded-2xl bg-gradient-to-r from-[#6C47FF] to-[#8B6AFF] text-white font-black text-base uppercase tracking-wider btn-shimmer hover:shadow-[0_8px_32px_rgba(108,71,255,0.4)] hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none flex items-center gap-3 animate-fadeInUp delay-300 relative overflow-hidden"
+          className="mt-8 group px-12 py-4 rounded-full bg-gradient-to-r from-[#6C47FF] to-[#8B6AFF] text-white font-black text-base uppercase tracking-wider btn-shimmer hover:shadow-[0_8px_32px_rgba(108,71,255,0.4)] hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none flex items-center gap-3 animate-fadeInUp delay-300 relative overflow-hidden"
         >
           {status === 'running' ? (
             <>
@@ -117,7 +117,7 @@ export default function Home() {
               <button
                 key={i}
                 onClick={() => setIdea(s)}
-                className="glass px-4 py-2 rounded-xl text-sm font-medium text-[#888899] hover:text-[#00D4AA] hover:border-[#00D4AA]/30 transition-all duration-300"
+                className="glass px-4 py-2 rounded-full text-sm font-medium text-[#888899] hover:text-[#00D4AA] hover:border-[#00D4AA]/30 transition-all duration-300"
                 style={{ animationDelay: `${500 + i * 80}ms` }}
               >
                 {s}

@@ -1,5 +1,6 @@
 from graph.state import AgentLog, StartupIdentity, StartupState
 from services.groq_client import structured_reasoning
+from services.stream_manager import log_event
 
 
 async def _fallback_identity(state: StartupState) -> StartupIdentity:
@@ -31,6 +32,6 @@ Return a startup name that sounds apt for the concept, plus a broad industry lab
     state.industry = identity.industry.strip() or state.industry or "AI / SaaS"
     state.current_step = 1
     state.completed_steps.append("orchestrator")
-    state.agent_logs.append(AgentLog(agent="Orchestrator", message=f"Startup identity set to {state.startup_name}.", status="success"))
+    await log_event(state, AgentLog(agent="Orchestrator", message=f"Startup identity set to {state.startup_name}.", status="success"))
     return state
 

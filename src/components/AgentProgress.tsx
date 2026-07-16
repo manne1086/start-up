@@ -232,7 +232,7 @@ export default function AgentProgress() {
             </div>
 
             {/* Log entries */}
-            <div className="flex-1 p-5 font-mono text-sm overflow-y-auto custom-scrollbar flex flex-col gap-1">
+            <div className="flex-1 p-5 font-mono text-sm overflow-y-auto custom-scrollbar scrobble flex flex-col gap-1">
               {displayLogs.length === 0 ? (
                 <div className="text-[#555566] flex items-center gap-2">
                   <div className="flex gap-1">

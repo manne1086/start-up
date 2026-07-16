@@ -113,7 +113,7 @@ def add_cover_slide(pptx: Presentation, state: dict[str, Any]):
     slide = pptx.slides.add_slide(pptx.slide_layouts[6])
     _configure_slide(slide)
     startup_name = _safe_str(state.get("startup_name") or state.get("idea"), "Startup")
-    tagline = _safe_str((state.get("pitch_deck") or {}).get("brand", {}).get("tagline"), "Investor-ready startup deck")
+    tagline = _safe_str(((state.get("pitch_deck") or {}).get("brand") or {}).get("tagline"), "Investor-ready startup deck")
     _add_textbox(slide, startup_name, 0.72, 0.7, 8.8, 0.8, font_size=30, bold=True)
     _add_textbox(slide, tagline, 0.72, 1.5, 8.8, 0.4, font_size=16)
     _add_textbox(slide, "AI-generated startup narrative, market, architecture, and financials", 0.72, 1.95, 8.8, 0.35, font_size=11)
