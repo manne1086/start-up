@@ -126,14 +126,14 @@ export default function Landing() {
             value={idea}
             onChange={(e) => setIdea(e.target.value)}
             placeholder="Describe your startup idea..."
-            className="w-full h-[72px] bg-[#111118] border-2 border-[#6C47FF] text-[#F0F0F0] placeholder-[#888899] px-6 py-3.5 focus:outline-none focus:shadow-[6px_6px_0px_#00D4AA] transition-all resize-none text-lg font-medium shadow-[4px_4px_0px_#6C47FF]"
+            className="w-full h-[72px] bg-[#111118] border-2 border-[#6C47FF] text-[#F0F0F0] placeholder-[#888899] px-6 py-3.5 focus:outline-none focus:shadow-[6px_6px_0px_#00D4AA] transition-all resize-none text-lg font-medium shadow-[4px_4px_0px_#6C47FF] rounded-full"
           />
 
           <div className="flex flex-wrap justify-center gap-4 mt-6">
               {['Research-led', 'SaaS', 'AI-native'].map((tag) => (
               <button
                 key={tag}
-                className="border-2 border-[#6C47FF]/30 bg-[#111118] px-5 py-1.5 text-sm font-bold text-[#888899] hover:border-[#00D4AA] hover:text-[#00D4AA] transition-colors shadow-[2px_2px_0px_transparent] hover:shadow-[2px_2px_0px_#00D4AA]"
+                className="border-2 border-[#6C47FF]/30 bg-[#111118] px-5 py-1.5 text-sm font-bold text-[#888899] hover:border-[#00D4AA] hover:text-[#00D4AA] transition-colors shadow-[2px_2px_0px_transparent] hover:shadow-[2px_2px_0px_#00D4AA] rounded-full"
               >
                 {tag}
               </button>
@@ -143,7 +143,7 @@ export default function Landing() {
 
         <button
           onClick={handleGenerate}
-          className="mt-12 w-full max-w-4xl flex justify-center items-center gap-3 px-8 py-5 bg-[#6C47FF] border-2 border-[#6C47FF] text-white font-black text-xl hover:bg-[#111118] hover:text-[#6C47FF] hover:border-[#6C47FF] shadow-[6px_6px_0px_#6C47FF] hover:shadow-[6px_6px_0px_#00D4AA] hover:-translate-y-1 transition-all group"
+          className="mt-12 w-full max-w-4xl flex justify-center items-center gap-3 px-8 py-5 bg-[#6C47FF] border-2 border-[#6C47FF] text-white font-black text-xl hover:bg-[#111118] hover:text-[#6C47FF] hover:border-[#6C47FF] shadow-[6px_6px_0px_#6C47FF] hover:shadow-[6px_6px_0px_#00D4AA] hover:-translate-y-1 transition-all group rounded-full"
         >
           {status === 'running' ? 'GENERATING...' : 'GENERATE STARTUP PACKAGE'}
           <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />

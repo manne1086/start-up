@@ -28,22 +28,23 @@ export default function GlobalNavbar() {
           >
             Projects
           </button>
-          <button 
-            onClick={() => navigate('landing')}
-            className={`h-full border-b-2 flex items-center transition-colors hover:text-[#00D4AA] border-transparent`}
+          <button
+            onClick={() => navigate('mvp')}
+            className={`h-full border-b-2 flex items-center transition-colors hover:text-[#00D4AA] ${screen === 'mvp' ? 'border-[#6C47FF] text-white' : 'border-transparent'}`}
           >
             How it works
           </button>
-          <button 
-            className={`h-full border-b-2 flex items-center transition-colors hover:text-[#00D4AA] border-transparent`}
+          <button
+            onClick={() => navigate('home')}
+            className={`h-full border-b-2 flex items-center transition-colors hover:text-[#00D4AA] ${screen === 'home' ? 'border-[#6C47FF] text-white' : 'border-transparent'}`}
           >
-            Pricing
+            New Idea
           </button>
-          <button 
-            onClick={() => navigate('components')}
-            className={`h-full border-b-2 flex items-center transition-colors hover:text-[#00D4AA] ${screen === 'components' ? 'border-[#6C47FF] text-white' : 'border-transparent'}`}
+          <button
+            onClick={() => navigate('settings')}
+            className={`h-full border-b-2 flex items-center transition-colors hover:text-[#00D4AA] ${screen === 'settings' ? 'border-[#6C47FF] text-white' : 'border-transparent'}`}
           >
-            UI Kit
+            Settings
           </button>
         </div>
       </div>

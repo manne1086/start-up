@@ -31,14 +31,14 @@ export default function Home() {
             value={idea}
             onChange={(e) => setIdea(e.target.value)}
             placeholder="Describe your startup idea..."
-            className="w-full h-[60px] bg-[#111118] border-2 border-[#6C47FF] text-[#F0F0F0] placeholder-[#888899] px-5 py-2.5 focus:outline-none focus:shadow-[4px_4px_0px_#00D4AA] transition-all resize-none text-lg font-medium shadow-[4px_4px_0px_#6C47FF]"
+            className="w-full h-[60px] bg-[#111118] border-2 border-[#6C47FF] text-[#F0F0F0] placeholder-[#888899] px-5 py-2.5 focus:outline-none focus:shadow-[4px_4px_0px_#00D4AA] transition-all resize-none text-lg font-medium shadow-[4px_4px_0px_#6C47FF] rounded-full"
           />
         </div>
 
         <button
           onClick={handleGenerate}
           disabled={!idea.trim() || status === 'running'}
-          className="mt-6 w-fit self-center flex justify-center items-center gap-3 px-8 py-4 bg-[#6C47FF] border-2 border-[#6C47FF] text-white font-black text-lg hover:bg-[#111118] hover:text-[#6C47FF] hover:border-[#6C47FF] shadow-[4px_4px_0px_#6C47FF] hover:shadow-[4px_4px_0px_#00D4AA] hover:-translate-y-1 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
+          className="mt-6 w-fit self-center flex justify-center items-center gap-3 px-8 py-4 bg-[#6C47FF] border-2 border-[#6C47FF] text-white font-black text-lg hover:bg-[#111118] hover:text-[#6C47FF] hover:border-[#6C47FF] shadow-[4px_4px_0px_#6C47FF] hover:shadow-[4px_4px_0px_#00D4AA] hover:-translate-y-1 transition-all group disabled:opacity-50 disabled:cursor-not-allowed rounded-full"
         >
           {status === 'running' ? 'STARTING...' : 'START BUILDING'}
           <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />

@@ -65,7 +65,7 @@ export default function AgentProgress() {
   const displayLogs = backendState?.agent_logs ?? [];
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-[#F0F0F0] flex flex-col font-sans">
+    <div className="h-screen bg-[#0A0A0F] text-[#F0F0F0] flex flex-col font-sans overflow-hidden">
       <GlobalNavbar />
 
       <div className="w-full bg-[#111118] border-b border-[#111118] px-6 py-4 flex flex-col gap-2 shrink-0">
@@ -85,8 +85,8 @@ export default function AgentProgress() {
         </div>
       </div>
 
-      <main className="flex-1 flex flex-col lg:flex-row w-full max-w-[1600px] mx-auto overflow-hidden">
-        <div className="w-full lg:w-[38%] border-r border-[#111118] p-6 lg:p-8 flex flex-col overflow-y-auto">
+      <main className="flex-1 min-h-0 flex flex-col lg:flex-row w-full max-w-[1600px] mx-auto overflow-hidden">
+        <div className="w-full lg:w-[38%] min-h-0 border-r border-[#111118] p-6 lg:p-8 flex flex-col overflow-y-auto">
           <div className="flex-1 flex flex-col gap-4">
             {flowSteps.map((step) => {
               const Icon = step.icon;
@@ -136,8 +136,8 @@ export default function AgentProgress() {
           </div>
         </div>
 
-        <div className="w-full lg:w-[62%] p-6 lg:p-8 flex flex-col bg-[#0A0A0F] overflow-hidden">
-          <div className="flex-1 bg-[#0D0D14] border-2 border-[#6C47FF] flex flex-col relative shadow-[4px_4px_0px_#6C47FF]">
+        <div className="w-full lg:w-[62%] min-h-0 p-6 lg:p-8 flex flex-col bg-[#0A0A0F] overflow-hidden">
+          <div className="flex-1 min-h-0 bg-[#0D0D14] border-2 border-[#6C47FF] flex flex-col relative shadow-[4px_4px_0px_#6C47FF]">
             <div className="p-3 border-b-2 border-[#6C47FF]/30 bg-[#111118] flex items-center justify-between">
               <span className="text-xs font-mono font-bold text-[#6C47FF]">agent_stream.log</span>
               <div className="flex gap-2">
@@ -147,7 +147,7 @@ export default function AgentProgress() {
               </div>
             </div>
 
-            <div className="flex-1 p-6 font-mono text-sm overflow-y-auto custom-scrollbar flex flex-col gap-2">
+            <div className="flex-1 min-h-0 p-6 font-mono text-sm overflow-y-auto custom-scrollbar flex flex-col gap-2">
               {displayLogs.length === 0 ? (
                 <div className="text-[#888899]">Waiting for the first agent event...</div>
               ) : (
