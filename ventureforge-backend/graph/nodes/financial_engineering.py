@@ -1,6 +1,7 @@
 from graph.state import AgentLog, FinancialModel, StartupState
 from services.financial_engine import build_financial_model
 from services.groq_client import structured_code
+from services.stream_manager import log_event
 
 
 async def financial_engineering(state: StartupState) -> StartupState:
@@ -19,5 +20,5 @@ Return the model as structured data matching the FinancialModel schema.
         model = build_financial_model(state.idea)
     state.financials = model
     state.completed_steps.append("financial_engineering")
-    state.agent_logs.append(AgentLog(agent="Financial Engineering", message="DCF model generated.", status="success"))
+    await log_event(state, AgentLog(agent="Financial Engineering", message="DCF model generated.", status="success"))
     return state

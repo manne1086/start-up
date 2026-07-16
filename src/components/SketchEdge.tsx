@@ -20,6 +20,7 @@ export default memo(function SketchEdge(props: EdgeProps) {
         <EdgeLabelRenderer>
           <div
             style={{
+              position: 'absolute',
               transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
             }}
             className="pointer-events-auto rounded-full border border-white/10 bg-[#0A0A0F]/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.24em] text-[#F0F0F0] shadow-[0_8px_18px_rgba(0,0,0,0.35)]"

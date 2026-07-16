@@ -1,5 +1,6 @@
 from graph.state import AgentLog, BusinessPlan, StartupState
 from services.groq_client import structured_reasoning
+from services.stream_manager import log_event
 
 
 async def business_planning(state: StartupState) -> StartupState:
@@ -43,5 +44,5 @@ Avoid hype, promotional language, or one-sided framing.
         )
     state.business_plan = plan
     state.completed_steps.append("business_planning")
-    state.agent_logs.append(AgentLog(agent="Business Planning", message="Business plan created.", status="success"))
+    await log_event(state, AgentLog(agent="Business Planning", message="Business plan created.", status="success"))
     return state

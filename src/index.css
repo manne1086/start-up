@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700;800&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -21,7 +21,7 @@ body {
   text-rendering: geometricPrecision;
 }
 
-/* Custom scrollbar for terminal/agent logs */
+/* ── Custom scrollbar ────────────────────────────────────── */
 .custom-scrollbar::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -32,11 +32,19 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #6C47FF; 
   border: 1px solid #0A0A0F;
+  border-radius: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #00D4AA; 
+  background: #00D4AA;
 }
 
+/* ── Scrobble: marks a log/feed container that auto-scrolls to its newest entry ── */
+.scrobble {
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+/* ── Glow utilities ──────────────────────────────────────── */
 .glow-violet {
   box-shadow:
     0 0 0 1px rgba(108, 71, 255, 0.35),
@@ -77,32 +85,253 @@ body {
     0 0 24px rgba(108, 71, 255, 0.18);
 }
 
-/* Apply eclipse/ellipse shape to UI elements globally */
-button, 
-input, 
-select, 
-textarea, 
-.border-2,
-.border,
-.bg-\[\#111118\] {
-  border-radius: 50px !important;
+/* ── Default border-radius baseline (overridable per-component via Tailwind rounded-* classes) ── */
+@layer base {
+  button {
+    border-radius: 12px;
+    transition: box-shadow 220ms ease, transform 220ms ease, filter 220ms ease, background 220ms ease, color 220ms ease, border-color 220ms ease;
+  }
+
+  input,
+  select,
+  textarea {
+    border-radius: 14px;
+    transition: border-color 220ms ease, box-shadow 220ms ease;
+  }
 }
 
-button {
-  border-radius: 9999px !important;
-  transition: box-shadow 180ms ease, transform 180ms ease, filter 180ms ease;
-}
-
-span.border {
-  border-radius: 9999px !important;
-}
-
+/* Directional borders should not be rounded */
 .border-b, .border-t, .border-l, .border-r {
   border-radius: 0 !important;
 }
 
+/* Interactive hover defaults */
 button:hover,
 a:hover,
 [role="button"]:hover {
   filter: brightness(1.06);
+}
+
+/* ── Glassmorphism utility ───────────────────────────────── */
+.glass {
+  background: rgba(17, 17, 24, 0.6);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-strong {
+  background: rgba(17, 17, 24, 0.85);
+  backdrop-filter: blur(32px) saturate(1.8);
+  -webkit-backdrop-filter: blur(32px) saturate(1.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* ── Animation Keyframes ─────────────────────────────────── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(108, 71, 255, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px 6px rgba(108, 71, 255, 0.2);
+  }
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes typingDots {
+  0%, 80%, 100% { opacity: 0.2; }
+  40% { opacity: 1; }
+}
+
+@keyframes borderGlow {
+  0%, 100% {
+    border-color: rgba(108, 71, 255, 0.3);
+  }
+  50% {
+    border-color: rgba(0, 212, 170, 0.5);
+  }
+}
+
+/* ── Animation utility classes ───────────────────────────── */
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s ease-out both;
+}
+
+.animate-fadeInDown {
+  animation: fadeInDown 0.5s ease-out both;
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.5s ease-out both;
+}
+
+.animate-slideInLeft {
+  animation: slideInLeft 0.5s ease-out both;
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.5s ease-out both;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2.5s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-pulseGlow {
+  animation: pulseGlow 2.5s ease-in-out infinite;
+}
+
+.animate-gradientShift {
+  background-size: 200% 200%;
+  animation: gradientShift 4s ease infinite;
+}
+
+.animate-borderGlow {
+  animation: borderGlow 3s ease-in-out infinite;
+}
+
+/* Stagger delays */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+.delay-600 { animation-delay: 600ms; }
+.delay-700 { animation-delay: 700ms; }
+.delay-800 { animation-delay: 800ms; }
+
+/* ── Card hover effect ───────────────────────────────────── */
+.card-hover {
+  transition: transform 280ms ease, box-shadow 280ms ease, border-color 280ms ease;
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(108, 71, 255, 0.15), 0 0 0 1px rgba(108, 71, 255, 0.2);
+}
+
+/* ── Shimmer button ──────────────────────────────────────── */
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.btn-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ── Progress bar animation ──────────────────────────────── */
+.progress-animated {
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Tooltip styling ─────────────────────────────────────── */
+.tooltip-dark {
+  background: rgba(10, 10, 15, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #F0F0F0;
 }

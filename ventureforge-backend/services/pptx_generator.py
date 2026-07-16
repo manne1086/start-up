@@ -23,9 +23,7 @@ def _rgb(hex_color: str) -> RGBColor:
 
 
 def _configure_slide(slide, *, bg: str = "#0A0A0F"):
-    fill = slide.background.fill
-    fill.solid()
-    fill.fore_color.rgb = _rgb(bg)
+    pass # Let the template or default theme handle the background
 
 
 def _add_textbox(
@@ -38,7 +36,7 @@ def _add_textbox(
     *,
     font_size: int = 18,
     bold: bool = False,
-    color: str = "#F0F0F0",
+    color: str | None = None,
     align: PP_ALIGN = PP_ALIGN.LEFT,
     font_name: str = "Aptos",
 ) -> Any:
@@ -52,18 +50,18 @@ def _add_textbox(
     r.font.size = Pt(font_size)
     r.font.bold = bold
     r.font.name = font_name
-    r.font.color.rgb = _rgb(color)
+    if color:
+        r.font.color.rgb = _rgb(color)
     return box
 
 
 def _add_card(slide, title: str, value: str, x: float, y: float, w: float, h: float, *, accent: str = "#6C47FF"):
     shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(h))
-    shape.fill.solid()
-    shape.fill.fore_color.rgb = _rgb("#111118")
+    shape.fill.background() # Inherit background
     shape.line.color.rgb = _rgb(accent)
     shape.line.width = Pt(1.4)
-    _add_textbox(slide, title, x + 0.16, y + 0.12, w - 0.32, 0.3, font_size=10, bold=True, color="#888899")
-    _add_textbox(slide, value, x + 0.16, y + 0.42, w - 0.32, h - 0.5, font_size=18, bold=True, color="#F0F0F0")
+    _add_textbox(slide, title, x + 0.16, y + 0.12, w - 0.32, 0.3, font_size=10, bold=True)
+    _add_textbox(slide, value, x + 0.16, y + 0.42, w - 0.32, h - 0.5, font_size=18, bold=True)
     return shape
 
 
@@ -99,8 +97,8 @@ def _market_values(state: dict[str, Any]) -> tuple[str, str, str]:
 
 
 def _make_slide_title(slide, title: str, subtitle: str):
-    _add_textbox(slide, title, 0.7, 0.45, 10.5, 0.6, font_size=26, bold=True, color="#FFFFFF")
-    _add_textbox(slide, subtitle, 0.7, 0.98, 10.5, 0.35, font_size=11, color="#888899")
+    _add_textbox(slide, title, 0.7, 0.45, 10.5, 0.6, font_size=26, bold=True)
+    _add_textbox(slide, subtitle, 0.7, 0.98, 10.5, 0.35, font_size=11)
     accent = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.7), Inches(1.34), Inches(0.58), Inches(0.06))
     accent.fill.solid()
     accent.fill.fore_color.rgb = _rgb("#00D4AA")
@@ -115,10 +113,10 @@ def add_cover_slide(pptx: Presentation, state: dict[str, Any]):
     slide = pptx.slides.add_slide(pptx.slide_layouts[6])
     _configure_slide(slide)
     startup_name = _safe_str(state.get("startup_name") or state.get("idea"), "Startup")
-    tagline = _safe_str((state.get("pitch_deck") or {}).get("brand", {}).get("tagline"), "Investor-ready startup deck")
-    _add_textbox(slide, startup_name, 0.72, 0.7, 8.8, 0.8, font_size=30, bold=True, color="#FFFFFF")
-    _add_textbox(slide, tagline, 0.72, 1.5, 8.8, 0.4, font_size=16, color="#00D4AA")
-    _add_textbox(slide, "AI-generated startup narrative, market, architecture, and financials", 0.72, 1.95, 8.8, 0.35, font_size=11, color="#888899")
+    tagline = _safe_str(((state.get("pitch_deck") or {}).get("brand") or {}).get("tagline"), "Investor-ready startup deck")
+    _add_textbox(slide, startup_name, 0.72, 0.7, 8.8, 0.8, font_size=30, bold=True)
+    _add_textbox(slide, tagline, 0.72, 1.5, 8.8, 0.4, font_size=16)
+    _add_textbox(slide, "AI-generated startup narrative, market, architecture, and financials", 0.72, 1.95, 8.8, 0.35, font_size=11)
     market_tam, market_sam, market_som = _market_values(state)
     _add_card(slide, "TAM", market_tam, 0.72, 3.0, 2.35, 1.3, accent="#6C47FF")
     _add_card(slide, "SAM", market_sam, 3.2, 3.0, 2.35, 1.3, accent="#00D4AA")
@@ -141,8 +139,8 @@ def add_executive_summary_slide(pptx: Presentation, state: dict[str, Any]):
     for title, value in left:
         _add_card(slide, title, value, x, 1.8, 2.95, 1.1, accent="#6C47FF" if title != "Solution" else "#00D4AA")
         x += 3.12
-    _add_textbox(slide, "Target market", 0.72, 3.15, 2.4, 0.3, font_size=10, bold=True, color="#888899")
-    _add_textbox(slide, _safe_str(bp.get("target_market"), "Target market pending"), 0.72, 3.42, 12.0, 0.6, font_size=16, bold=True, color="#F0F0F0")
+    _add_textbox(slide, "Target market", 0.72, 3.15, 2.4, 0.3, font_size=10, bold=True)
+    _add_textbox(slide, _safe_str(bp.get("target_market"), "Target market pending"), 0.72, 3.42, 12.0, 0.6, font_size=16, bold=True)
 
 
 def add_market_slide(pptx: Presentation, state: dict[str, Any]):
@@ -160,12 +158,11 @@ def add_market_slide(pptx: Presentation, state: dict[str, Any]):
         left = (12.0 - width) / 2
         top = 1.9 + idx * 1.05
         shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(left), Inches(top), Inches(width), Inches(0.82))
-        shape.fill.solid()
-        shape.fill.fore_color.rgb = _rgb("#111118")
+        shape.fill.background()
         shape.line.color.rgb = _rgb(accent)
         shape.line.width = Pt(1.7)
-        _add_textbox(slide, f"{name}  •  {value}", left + 0.2, top + 0.16, width - 0.4, 0.25, font_size=18, bold=True, color="#F0F0F0", align=PP_ALIGN.CENTER)
-        _add_textbox(slide, "Nested market segment", left + 0.2, top + 0.42, width - 0.4, 0.2, font_size=10, color="#888899", align=PP_ALIGN.CENTER)
+        _add_textbox(slide, f"{name}  •  {value}", left + 0.2, top + 0.16, width - 0.4, 0.25, font_size=18, bold=True, align=PP_ALIGN.CENTER)
+        _add_textbox(slide, "Nested market segment", left + 0.2, top + 0.42, width - 0.4, 0.2, font_size=10, align=PP_ALIGN.CENTER)
 
     comps = (market.get("competitors") or [])[:3]
     x = 0.72
@@ -196,7 +193,7 @@ def add_architecture_slide(pptx: Presentation, state: dict[str, Any]):
     layer_height = 0.92
     start_y = 1.8
     for li, layer in enumerate(ordered_layers):
-        _add_textbox(slide, _safe_str(layer.get("label"), layer.get("id", "Layer")).upper(), 0.78, start_y + li * 1.1, 1.2, 0.2, font_size=9, bold=True, color="#888899")
+        _add_textbox(slide, _safe_str(layer.get("label"), layer.get("id", "Layer")).upper(), 0.78, start_y + li * 1.1, 1.2, 0.2, font_size=9, bold=True)
         layer_nodes = [n for n in nodes if n.get("layer") == layer.get("id")]
         if not layer_nodes and li == 0:
             layer_nodes = [{"id": "web", "label": "React", "type": "frontend", "layer": "frontend", "description": "User interface"}]
@@ -210,12 +207,11 @@ def add_architecture_slide(pptx: Presentation, state: dict[str, Any]):
             x = start_x + ni * (node_width + gap)
             y = start_y + li * 1.1
             shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x), Inches(y), Inches(node_width), Inches(layer_height))
-            shape.fill.solid()
-            shape.fill.fore_color.rgb = _rgb("#111118")
+            shape.fill.background()
             shape.line.color.rgb = _rgb("#6C47FF" if li % 2 == 0 else "#00D4AA")
             shape.line.width = Pt(1.6)
-            _add_textbox(slide, _safe_str(node.get("label"), "Node"), x + 0.12, y + 0.14, node_width - 0.24, 0.2, font_size=13, bold=True, color="#FFFFFF")
-            _add_textbox(slide, _safe_str(node.get("description"), "Description pending"), x + 0.12, y + 0.42, node_width - 0.24, 0.35, font_size=9, color="#888899")
+            _add_textbox(slide, _safe_str(node.get("label"), "Node"), x + 0.12, y + 0.14, node_width - 0.24, 0.2, font_size=13, bold=True)
+            _add_textbox(slide, _safe_str(node.get("description"), "Description pending"), x + 0.12, y + 0.42, node_width - 0.24, 0.35, font_size=9)
             node_positions[_safe_str(node.get("id"))] = (x + node_width / 2, y + layer_height, node_width, layer_height)
 
     for edge in edges:
@@ -359,8 +355,15 @@ def add_risks_slide(pptx: Presentation, state: dict[str, Any]):
         _add_tag(slide, rec, 0.72, 3.9 + i * 0.42, 11.4, 0.28, fill="#111118", color="#F0F0F0")
 
 
+import os
+
 def generate_pitch_deck_pptx(state: dict[str, Any]) -> BytesIO:
-    pptx = Presentation()
+    template_path = os.path.join(os.path.dirname(__file__), "..", "..", "assets", "template.pptx")
+    if os.path.exists(template_path):
+        pptx = Presentation(template_path)
+    else:
+        pptx = Presentation()
+    
     pptx.slide_width = SLIDE_W
     pptx.slide_height = SLIDE_H
     add_cover_slide(pptx, state)

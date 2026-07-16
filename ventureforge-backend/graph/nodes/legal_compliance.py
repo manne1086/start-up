@@ -1,5 +1,6 @@
 from graph.state import AgentLog, ComplianceAction, LegalReport, RegulationStatus, StartupState
 from services.groq_client import structured_reasoning
+from services.stream_manager import log_event
 
 
 async def legal_compliance(state: StartupState) -> StartupState:
@@ -37,5 +38,5 @@ Return a LegalReport with boolean gdpr_compliant, local_regulations, entity_reco
         )
     state.legal = report
     state.completed_steps.append("legal_compliance")
-    state.agent_logs.append(AgentLog(agent="Legal", message="Compliance review complete.", status="success"))
+    await log_event(state, AgentLog(agent="Legal", message="Compliance review complete.", status="success"))
     return state

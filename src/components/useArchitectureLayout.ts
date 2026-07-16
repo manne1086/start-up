@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 import type { ArchitectureModel, LayoutNode } from './architecture-types';
 
-const NODE_WIDTH = 240;
-const NODE_HEIGHT = 104;
-const LAYER_GAP = 178;
-const NODE_GAP = 44;
-const LEFT_PADDING = 72;
-const TOP_PADDING = 56;
+const NODE_WIDTH = 260;
+const NODE_HEIGHT = 120;
+const LAYER_GAP = 220;
+const NODE_GAP = 80;
+const LEFT_PADDING = 120;
+const TOP_PADDING = 80;
 
 export function useArchitectureLayout(architecture: ArchitectureModel) {
   return useMemo(() => {

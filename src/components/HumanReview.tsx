@@ -14,6 +14,7 @@ import {
   Target,
   Globe2,
   ChevronRight,
+  TrendingUp,
 } from 'lucide-react';
 import GlobalNavbar from './GlobalNavbar';
 import { useGeneration } from '../generation';

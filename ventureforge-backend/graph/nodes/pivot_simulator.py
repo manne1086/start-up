@@ -1,5 +1,6 @@
 from graph.state import AgentLog, PivotOption, StartupState
 from services.groq_client import structured_reasoning
+from services.stream_manager import log_event
 
 from pydantic import BaseModel
 
@@ -50,5 +51,5 @@ Return JSON with a top-level pivots array of exactly 3 PivotOption objects.
         ]
     state.pivots = pivots
     state.completed_steps.append("pivot_simulator")
-    state.agent_logs.append(AgentLog(agent="Pivot Simulator", message="Pivot options generated.", status="success"))
+    await log_event(state, AgentLog(agent="Pivot Simulator", message="Pivot options generated.", status="success"))
     return state

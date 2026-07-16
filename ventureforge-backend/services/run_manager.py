@@ -78,6 +78,8 @@ async def run_until_pause(thread_id: str) -> None:
         ]:
             await emit(thread_id, "step", {"node": node_name, "status": "started"})
             await trace_node_start(thread_id, state, node_name)
+            # Nodes push their own logs live via services.stream_manager.log_event
+            # as they happen (e.g. Tavily search queries/URLs), not just at the end.
             state = await node(state)
             await trace_node_complete(thread_id, state, node_name)
             await emit(thread_id, "step", {"node": node_name, "status": "completed"})
@@ -109,6 +111,8 @@ async def run_after_resume(thread_id: str) -> None:
         ]:
             await emit(thread_id, "step", {"node": node_name, "status": "started"})
             await trace_node_start(thread_id, state, node_name)
+            # Nodes push their own logs live via services.stream_manager.log_event
+            # as they happen, not just at the end.
             state = await node(state)
             await trace_node_complete(thread_id, state, node_name)
             await emit(thread_id, "step", {"node": node_name, "status": "completed"})
