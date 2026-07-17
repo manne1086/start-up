@@ -113,6 +113,10 @@ class BrandTokens(BaseModel):
 class PitchDeckData(BaseModel):
     slides: list[PitchSlide] = []
     brand: BrandTokens
+    presenton_id: str | None = None
+    presenton_download_url: str | None = None
+    presenton_edit_url: str | None = None
+    slide_image_count: int = 0
 
 
 class StackItem(BaseModel):

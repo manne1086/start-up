@@ -51,7 +51,7 @@ export default function Home() {
         </div>
         
         {/* Input */}
-        <div className="w-full max-w-3xl relative animate-fadeInUp delay-200">
+        <div className="w-full max-w-[870px] relative animate-fadeInUp delay-200 mx-auto">
           <div className="relative group">
             <div className="absolute -inset-[1px] rounded-full bg-gradient-to-r from-[#6C47FF] via-[#00D4AA] to-[#6C47FF] opacity-30 group-focus-within:opacity-70 blur-sm transition-opacity duration-500 animate-gradientShift" style={{ backgroundSize: '200% 50%' }} />
             <textarea
@@ -59,8 +59,8 @@ export default function Home() {
               onChange={(e) => setIdea(e.target.value)}
               placeholder="e.g. An AI-powered resume builder that helps job seekers craft ATS-optimized resumes..."
               maxLength={500}
-              className="relative w-full h-[130px] bg-[#111118]/95 text-[#F0F0F0] placeholder-[#555566] px-10 py-5 focus:outline-none resize-none text-base font-medium rounded-full border border-transparent z-[1] leading-relaxed"
-              style={{ backdropFilter: 'blur(20px)' }}
+              className="relative w-full h-[60px] bg-[#111118]/95 text-[#F0F0F0] placeholder-[#555566] focus:outline-none resize-none text-base font-medium rounded-full border border-transparent z-[1] block overflow-hidden px-8 py-[18px]"
+              style={{ backdropFilter: 'blur(20px)', lineHeight: '24px' }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();

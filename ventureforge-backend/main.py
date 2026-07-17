@@ -35,11 +35,17 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="VentureForge Backend", version="1.0.0", lifespan=lifespan)
 configure_middleware(app)
+
+# Cross-domain deployments (Vercel frontend + Render backend) require
+# SameSite=None + Secure for the session cookie to be sent on fetch()
+# requests with credentials: 'include'. Locally, frontend/backend share
+# the "localhost" site, so Lax + non-secure keeps http:// dev working.
+is_production = settings.APP_ENV == "production"
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.SESSION_SECRET,
-    same_site="lax",
-    https_only=False,
+    same_site="none" if is_production else "lax",
+    https_only=is_production,
 )
 
 app.include_router(auth_router, prefix="/api")

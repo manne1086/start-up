@@ -17,7 +17,14 @@ async def init_database() -> None:
         pool = AsyncConnectionPool(conninfo=_normalize_conninfo(settings.DATABASE_URL), open=False)
         await pool.open()
         async with pool.connection() as conn:
-            await conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+            try:
+                await conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+            except Exception as exc:
+                # Some managed Postgres plans restrict CREATE EXTENSION for
+                # non-superusers. Don't block startup — vector search is not
+                # required for the app's core flow.
+                print(f"[Database] Skipping pgvector extension setup: {exc}")
+                await conn.rollback()
             await conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS ventureforge_projects (

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Presentation, Download, Share2, Play, ChevronLeft, ChevronRight, RefreshCw, MoveVertical, FileText, Plus, Trash2, Copy, Maximize, Edit3, Loader2 } from 'lucide-react';
+import { Presentation, Download, Share2, Play, ChevronLeft, ChevronRight, RefreshCw, MoveVertical, FileText, Plus, Trash2, Copy, Maximize, Edit3, Loader2, Eye } from 'lucide-react';
 import { useGeneration } from '../generation';
 import { useRouter } from '../router';
 import GlobalNavbar from './GlobalNavbar';
@@ -23,9 +23,19 @@ export default function PitchDeckEditor() {
     | {
         slides?: Slide[];
         brand?: { tagline?: string; primary_color?: string; secondary_color?: string; font?: string };
+        presenton_download_url?: string;
+        presenton_edit_url?: string;
+        slide_image_count?: number;
       }
     | null
     | undefined;
+
+  const presentonEditUrl = initialDeck?.presenton_edit_url;
+  const presentonDownloadUrl = initialDeck?.presenton_download_url;
+  const slideImageCount = initialDeck?.slide_image_count ?? 0;
+  const threadId = backendState?.thread_id as string | undefined;
+  const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+  const hasSlideImages = Boolean(threadId) && slideImageCount > 0;
 
   // Local state for slide editing
   const [slides, setSlides] = useState<Slide[]>(initialDeck?.slides ?? []);
@@ -134,13 +144,31 @@ export default function PitchDeckEditor() {
     setIsDownloading(true);
     setActionError('');
     try {
-      await downloadPitchDeckPptx(backendState, deckTitle);
+      if (presentonDownloadUrl) {
+        const res = await fetch(presentonDownloadUrl);
+        if (!res.ok) throw new Error(`Download failed (${res.status})`);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${deckTitle}.pptx`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } else {
+        await downloadPitchDeckPptx(backendState, deckTitle);
+      }
     } catch (err: any) {
       const msg = err?.message ?? 'Failed to download PPTX. Please try again.';
       setActionError(msg);
       setTimeout(() => setActionError(''), 6000);
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const handleViewPpt = () => {
+    if (presentonEditUrl) {
+      window.open(presentonEditUrl, '_blank', 'noopener');
     }
   };
 
@@ -289,6 +317,11 @@ export default function PitchDeckEditor() {
           <button onClick={() => exportStartupPdf(backendState, deckTitle)} className="px-4 py-1.5 bg-transparent border border-[#00D4AA]/50 text-[#00D4AA] font-bold text-xs hover:bg-[#00D4AA] hover:text-[#0A0A0F] rounded-lg transition-all flex items-center gap-2">
             <FileText className="w-3.5 h-3.5" /> PDF
           </button>
+          {presentonEditUrl && (
+            <button onClick={handleViewPpt} className="px-4 py-1.5 bg-transparent border border-[#6C47FF]/50 text-[#C9BEFF] font-bold text-xs hover:bg-[#6C47FF] hover:text-white rounded-lg transition-all flex items-center gap-2">
+              <Eye className="w-3.5 h-3.5" /> View PPT
+            </button>
+          )}
           <button onClick={handleDownload} disabled={isDownloading} className="px-4 py-1.5 bg-[#6C47FF] text-white font-bold text-xs hover:bg-[#5a3ae0] rounded-lg transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(108,71,255,0.3)] hover:shadow-[0_0_20px_rgba(108,71,255,0.5)] disabled:opacity-50 disabled:cursor-not-allowed">
             {isDownloading ? (
               <>
@@ -341,8 +374,16 @@ export default function PitchDeckEditor() {
                   <span>{i + 1}</span>
                   <MoveVertical className="w-3 h-3 text-[#555566] opacity-0 group-hover:opacity-100" />
                 </div>
-                <div className={`aspect-video bg-[#111118] flex items-center justify-center p-2 text-center rounded-lg transition-all duration-300 ${activeSlideIndex === i ? 'border-2 border-[#6C47FF] shadow-[0_0_15px_rgba(108,71,255,0.2)]' : 'border border-white/10 group-hover:border-[#888899]'}`}>
-                  <span className="text-[10px] font-bold text-[#F0F0F0] leading-tight truncate px-1">{slide.title}</span>
+                <div className={`aspect-video bg-[#111118] flex items-center justify-center text-center rounded-lg transition-all duration-300 overflow-hidden ${activeSlideIndex === i ? 'border-2 border-[#6C47FF] shadow-[0_0_15px_rgba(108,71,255,0.2)]' : 'border border-white/10 group-hover:border-[#888899]'}`}>
+                  {hasSlideImages ? (
+                    <img
+                      src={`${API_URL}/api/outputs/${threadId}/slide-image/${i + 1}`}
+                      alt={slide.title ?? `Slide ${i + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-[10px] font-bold text-[#F0F0F0] leading-tight truncate px-1">{slide.title}</span>
+                  )}
                 </div>
               </div>
             ))}
@@ -351,35 +392,46 @@ export default function PitchDeckEditor() {
 
         {/* CENTER — Canvas & Controls */}
         <div className="flex-1 bg-[#0A0A0F] flex flex-col relative overflow-hidden">
-          
+
           {/* Main Canvas Area */}
           <div className="flex-1 p-4 md:p-8 flex items-center justify-center relative bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#1a1a24] to-[#0A0A0F]">
-            
-            {/* The Slide Container */}
-            <div 
-              ref={canvasRef}
-              className={`w-full max-w-[1024px] aspect-video bg-[#0D0D14] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col p-10 md:p-14 relative overflow-hidden transition-all duration-500 ease-in-out ${isFullscreen ? 'border-none rounded-none w-screen h-screen max-w-none' : 'rounded-[24px]'}`}
-            >
-              {/* Decorative Background Elements */}
-              <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-b from-[#6C47FF]/10 to-transparent rounded-full blur-3xl -mr-[300px] -mt-[300px] pointer-events-none transition-all duration-700"></div>
-              <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-t from-[#00D4AA]/5 to-transparent rounded-full blur-3xl -ml-[200px] -mb-[200px] pointer-events-none transition-all duration-700"></div>
-              
-              {/* Slide Header */}
-              {activeSlide?.type !== 'title' && (
-                <div className="flex items-center gap-4 mb-8 z-10 animate-fadeInDown">
-                  <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">{activeSlide?.title ?? 'Slide'}</h2>
-                  <div className="h-1 flex-1 bg-gradient-to-r from-[#6C47FF] to-transparent rounded-full opacity-30 mt-2"></div>
+            {hasSlideImages ? (
+              <div
+                ref={canvasRef}
+                className={`w-full max-w-[1024px] aspect-video bg-[#0D0D14] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden transition-all duration-500 ease-in-out flex items-center justify-center ${isFullscreen ? 'border-none rounded-none w-screen h-screen max-w-none' : 'rounded-[24px]'}`}
+              >
+                <img
+                  key={activeSlideIndex}
+                  src={`${API_URL}/api/outputs/${threadId}/slide-image/${activeSlideIndex + 1}`}
+                  alt={activeSlide?.title ?? `Slide ${activeSlideIndex + 1}`}
+                  className="w-full h-full object-contain animate-fadeInUp"
+                />
+                <div className="absolute bottom-3 right-4 text-white/60 font-mono text-xs z-10 bg-black/40 px-2 py-1 rounded">
+                  {activeSlideIndex + 1} / {slides.length}
                 </div>
-              )}
-
-              {/* Dynamic Content */}
-              {renderSlideContent(activeSlide)}
-              
-              {/* Slide Number */}
-              <div className="absolute bottom-6 right-8 text-[#555566] font-mono text-xs z-10">
-                {activeSlideIndex + 1}
               </div>
-            </div>
+            ) : (
+              <div
+                ref={canvasRef}
+                className={`w-full max-w-[1024px] aspect-video bg-[#0D0D14] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col p-10 md:p-14 relative overflow-hidden transition-all duration-500 ease-in-out ${isFullscreen ? 'border-none rounded-none w-screen h-screen max-w-none' : 'rounded-[24px]'}`}
+              >
+                <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-b from-[#6C47FF]/10 to-transparent rounded-full blur-3xl -mr-[300px] -mt-[300px] pointer-events-none transition-all duration-700"></div>
+                <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-t from-[#00D4AA]/5 to-transparent rounded-full blur-3xl -ml-[200px] -mb-[200px] pointer-events-none transition-all duration-700"></div>
+
+                {activeSlide?.type !== 'title' && (
+                  <div className="flex items-center gap-4 mb-8 z-10 animate-fadeInDown">
+                    <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">{activeSlide?.title ?? 'Slide'}</h2>
+                    <div className="h-1 flex-1 bg-gradient-to-r from-[#6C47FF] to-transparent rounded-full opacity-30 mt-2"></div>
+                  </div>
+                )}
+
+                {renderSlideContent(activeSlide)}
+
+                <div className="absolute bottom-6 right-8 text-[#555566] font-mono text-xs z-10">
+                  {activeSlideIndex + 1}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Bottom Control Bar */}

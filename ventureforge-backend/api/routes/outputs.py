@@ -1,7 +1,9 @@
 import json
+from io import BytesIO
 
+import httpx
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import Response
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
 from core.config import settings
@@ -9,6 +11,7 @@ from services.groq_client import structured_reasoning
 from services.image_fetcher import fetch_slide_images
 from services.presentations_ai import generate_presentations_ai_pptx
 from services.pptx_generator import generate_pitch_deck_pptx
+from services.pptx_to_images import get_slide_image_path
 from services.run_manager import get_run_state
 
 router = APIRouter()
@@ -42,23 +45,33 @@ async def generate_pptx(payload: dict):
             raise HTTPException(status_code=404, detail="Run not found")
         state = run_state.model_dump(mode="json")
 
-    if not state.get("pitch_deck") or not state["pitch_deck"].get("slides"):
-        raise HTTPException(
-            status_code=422,
-            detail="Generation is not complete yet — pitch_deck data is missing. Complete the full generation first.",
-        )
-
     idea = str(state.get("idea") or state.get("startup_name") or "")
-    images = await fetch_slide_images(idea)
+    pitch_deck = state.get("pitch_deck") or {}
 
     buffer = None
-    if settings.PRESENTATIONS_AI_API_KEY:
+
+    presenton_url = pitch_deck.get("presenton_download_url")
+    if presenton_url:
+        try:
+            file_response = httpx.get(presenton_url, timeout=120)
+            file_response.raise_for_status()
+            buffer = BytesIO(file_response.content)
+        except Exception as exc:
+            print(f"[Presenton] Pre-generated download failed, regenerating: {exc}")
+
+    if buffer is None and settings.PRESENTATIONS_AI_API_KEY:
         try:
             buffer = generate_presentations_ai_pptx(state)
         except Exception as exc:
-            print(f"[Presentations.ai] Falling back to local PPTX generator: {exc}")
+            print(f"[Presenton] Falling back to local PPTX generator: {exc}")
 
     if buffer is None:
+        if not pitch_deck.get("slides"):
+            raise HTTPException(
+                status_code=422,
+                detail="Generation is not complete yet — pitch_deck data is missing. Complete the full generation first.",
+            )
+        images = await fetch_slide_images(idea)
         try:
             buffer = generate_pitch_deck_pptx(state, images=images)
         except Exception as exc:
@@ -67,6 +80,14 @@ async def generate_pptx(payload: dict):
     filename = f'{(state.get("startup_name") or state.get("idea") or "pitch-deck").replace(" ", "-").lower()}.pptx'
     headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
     return Response(content=buffer.getvalue(), media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation", headers=headers)
+
+
+@router.get("/outputs/{thread_id}/slide-image/{slide_number}")
+async def slide_image(thread_id: str, slide_number: int):
+    path = get_slide_image_path(thread_id, slide_number)
+    if not path:
+        raise HTTPException(status_code=404, detail="Slide image not found")
+    return FileResponse(path, media_type="image/png")
 
 
 @router.post("/outputs/regenerate-slide")

@@ -14,3 +14,4 @@ ventureforge-backend/**/*.py[cod]
 ventureforge-backend/.pytest_cache/
 ventureforge-backend/.mypy_cache/
 ventureforge-backend/.ruff_cache/
+ventureforge-backend/data/
