@@ -10,11 +10,16 @@ so the community feed looks populated during demos.
 
 import asyncio
 import os
+import sys
 import json
 from uuid import uuid4
 
 import psycopg
 from psycopg.types.json import Json
+
+# Psycopg async connections require a selector loop on Windows (same fix as main.py).
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL",
@@ -596,7 +601,7 @@ async def seed():
                         Json(idea["summary"]),
                     ),
                 )
-                print(f"  ✓ {idea['title']}")
+                print(f"  [ok] {idea['title']}")
 
         await conn.commit()
 

@@ -37,7 +37,7 @@ export default function Landing() {
   });
 
   const handleSignIn = () => {
-    window.location.href = `${API_URL}/api/auth/google/login`;
+    window.location.href = `${API_URL}/api/auth/oauth/google`;
   };
 
   const handleGenerate = async () => {

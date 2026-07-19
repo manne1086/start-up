@@ -184,7 +184,7 @@ In Google Cloud Console, use:
 
 The backend now exposes:
 
-- `GET /api/auth/google/login`
+- `GET /api/auth/oauth/google`
 - `GET /api/auth/google/callback`
 - `GET /api/auth/me`
 - `POST /api/auth/logout`

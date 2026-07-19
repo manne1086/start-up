@@ -18,7 +18,7 @@ oauth.register(
 )
 
 
-@router.get("/auth/google/login")
+@router.get("/auth/oauth/google")
 async def google_login(request: Request):
     if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
         return {
