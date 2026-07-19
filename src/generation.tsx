@@ -93,7 +93,20 @@ function getStoredGeneration(): StoredGeneration {
 
 function persistGeneration(next: StoredGeneration) {
   if (typeof window === 'undefined') return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // Quota exceeded (large AI payloads) — fall back to storing only the
+    // thread pointer so the startup effect can refetch full state from the backend.
+    try {
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ threadId: next.threadId, idea: next.idea, status: next.status, backendState: null }),
+      );
+    } catch {
+      // Storage completely unavailable; state only lives in React memory.
+    }
+  }
 }
 
 function normalizeState(data: GenerationState | null, threadId: string | null, idea: string, status: RunStatus): GenerationState | null {

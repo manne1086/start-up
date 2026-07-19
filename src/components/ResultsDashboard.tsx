@@ -17,6 +17,7 @@ import {
   Globe,
   ArrowLeft,
   Loader2,
+  Users,
 } from 'lucide-react';
 import JSZip from 'jszip';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
@@ -28,11 +29,13 @@ import { downloadPitchDeckPptx } from '../pptx';
 import { exportStartupPdf } from '../pdfExport';
 
 export default function ResultsDashboard() {
-  const { navigate } = useRouter();
+  const { navigate, navigatePath } = useRouter();
   const { backendState } = useGeneration();
   const viz = buildVisualizationData(backendState);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pptxLoading, setPptxLoading] = useState(false);
+  const [publishLoading, setPublishLoading] = useState(false);
+  const [published, setPublished] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
 
   const ideaName = backendState?.startup_name || backendState?.idea?.toString()?.slice(0, 32) || 'Startup';
@@ -130,6 +133,41 @@ export default function ResultsDashboard() {
   const handleDrivePush = async () => {
     await handleCopyLink();
     showToast('Drive export not configured — link copied instead.');
+  };
+
+  const handlePublishToCommunity = async () => {
+    const threadId = backendState?.thread_id;
+    if (!threadId) {
+      showToast('No generation run to publish.');
+      return;
+    }
+    setPublishLoading(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+      const res = await fetch(`${API_URL}/api/ideas/from-run`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ thread_id: threadId, is_public: true }),
+      });
+      if (res.status === 401) {
+        showToast('Sign in to publish to the community.');
+        return;
+      }
+      if (!res.ok) {
+        const msg = await res.text();
+        showToast(msg || 'Failed to publish.');
+        return;
+      }
+      const idea = await res.json();
+      setPublished(true);
+      showToast('Published to Community!');
+      setTimeout(() => navigatePath(`/ideas/${idea.id}`), 600);
+    } catch (err: any) {
+      showToast(err?.message ?? 'Failed to publish.');
+    } finally {
+      setPublishLoading(false);
+    }
   };
 
   const handleDownloadPptx = async () => {
@@ -423,6 +461,20 @@ export default function ResultsDashboard() {
           {/* ── Sidebar ── */}
           <div className="xl:col-span-1">
             <div className="bg-[#111118] rounded-2xl p-6 sticky top-24 border-2 border-[#1E1E28] animate-fadeInLeft" style={{ animationDelay: '400ms' }}>
+              {/* Publish to Community */}
+              <button
+                onClick={handlePublishToCommunity}
+                disabled={publishLoading || published}
+                className="w-full mb-6 px-5 py-2.5 bg-[#6C47FF] border-2 border-[#6C47FF] text-white font-bold text-sm hover:bg-[#111118] hover:text-[#6C47FF] shadow-[4px_4px_0px_#00D4AA] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {publishLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Users className="w-4 h-4" />
+                )}
+                {published ? 'Published!' : publishLoading ? 'Publishing…' : 'Publish to Community'}
+              </button>
+
               <h6 className="font-black text-white text-base mb-6 tracking-wide">Share this package</h6>
               <div className="flex flex-col gap-3">
                 {[

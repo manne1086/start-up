@@ -1,11 +1,13 @@
 import { Rocket, Bell, ChevronDown, User, Sparkles } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { useGeneration } from '../generation';
 import { useRouter } from '../router';
 import { useEffect, useState } from 'react';
 
 export default function GlobalNavbar() {
-  const { screen, navigate } = useRouter();
+  const { screen, navigate, navigatePath } = useRouter();
   const { backendState } = useGeneration();
+  const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -52,6 +54,13 @@ export default function GlobalNavbar() {
           >
             New Idea
             <div className={`absolute bottom-0 left-0 h-1 bg-[#6C47FF] rounded-t-full transition-all duration-300 ${screen === 'home' ? 'w-full shadow-[0_-2px_10px_rgba(108,71,255,0.5)]' : 'w-0 group-hover:w-full'}`}></div>
+          </button>
+          <button
+            onClick={() => navigatePath('/community')}
+            className={`h-full relative flex items-center transition-colors hover:text-white group ${location.pathname === '/community' ? 'text-white' : ''}`}
+          >
+            Community
+            <div className={`absolute bottom-0 left-0 h-1 bg-[#6C47FF] rounded-t-full transition-all duration-300 ${location.pathname === '/community' ? 'w-full shadow-[0_-2px_10px_rgba(108,71,255,0.5)]' : 'w-0 group-hover:w-full'}`}></div>
           </button>
           <button
             onClick={() => navigate('settings')}
