@@ -17,6 +17,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import GlobalNavbar from './GlobalNavbar';
+import ReviewAssistant from './ReviewAssistant';
 import { useGeneration } from '../generation';
 import { useRouter } from '../router';
 
@@ -355,6 +356,8 @@ export default function HumanReview() {
         </div>
 
         <div className="w-full lg:w-[45%] flex flex-col gap-6">
+          <ReviewAssistant threadId={threadId ?? backendState?.thread_id ?? null} />
+
           <div className="border-2 border-[#111118] bg-[#111118] flex flex-col flex-1">
             <div className="p-5 border-b-2 border-[#0A0A0F] flex justify-between items-center">
               <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">

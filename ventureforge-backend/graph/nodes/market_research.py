@@ -1,3 +1,4 @@
+from graph.nodes.validator import MAX_VALIDATOR_RETRIES
 from graph.state import AgentLog, Competitor, MarketData, StartupState
 from services.groq_client import structured_reasoning
 from services.stream_manager import log_event
@@ -5,6 +6,17 @@ from services.tavily_client import search
 
 
 async def market_research(state: StartupState) -> StartupState:
+    revision_reason = state.revision_reasons.pop("market_research", None)
+    if revision_reason:
+        state.retry_counts["market_research"] = state.retry_counts.get("market_research", 0) + 1
+        retry_num = state.retry_counts["market_research"]
+        await log_event(state, AgentLog(
+            agent="Market Research",
+            message=f"Market Validator found issues — refining research (retry {retry_num}/{MAX_VALIDATOR_RETRIES}): {revision_reason}",
+            status="info",
+            thought=f"Re-running market research to address validator feedback: {revision_reason}",
+        ))
+
     seed_queries = [
         state.idea,
         f"{state.idea} market size competitors pricing",
@@ -59,11 +71,20 @@ async def market_research(state: StartupState) -> StartupState:
     research_blob = "\n".join(
         f"- {item['title']}: {item['content']} ({item['url']})" for item in all_results
     )
+    revision_context = ""
+    if revision_reason:
+        revision_context = f"""
+IMPORTANT — A previous analysis was flagged by the validator:
+{revision_reason}
+
+Focus on addressing these specific gaps while keeping the rest of the research intact.
+"""
+
     prompt = f"""
 You are the VentureForge market research agent.
 Idea: {state.idea}
 Startup name: {state.startup_name}
-
+{revision_context}
 Using the search evidence below, produce a concise market research summary with concrete, decision-useful details.
 Evidence:
 {research_blob}

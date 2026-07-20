@@ -74,7 +74,17 @@ async def google_callback(request: Request):
 
 @router.get("/auth/me")
 async def auth_me(request: Request):
-    return {"authenticated": "user" in request.session, "user": request.session.get("user")}
+    session_user = request.session.get("user")
+    if not session_user:
+        return {"authenticated": False, "user": None}
+    from core.database import fetch_one
+    username = None
+    sub = session_user.get("sub")
+    if sub:
+        row = await fetch_one("SELECT username FROM users WHERE id = %s", (sub,))
+        if row:
+            username = row["username"]
+    return {"authenticated": True, "user": {**session_user, "username": username}}
 
 
 @router.post("/auth/logout")

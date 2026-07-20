@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from psycopg.types.json import Json
 
 from core.database import execute, fetch_all, fetch_one, upsert_user
+from routers.notifications import create_notification
 from graph.state import StartupState
 from schemas.community import (
     CommentCreate,
@@ -621,6 +622,20 @@ async def add_comment(idea_id: UUID, payload: CommentCreate, request: Request):
         """,
         (idea_id, user["sub"], payload.content, payload.parent_comment_id),
     )
+
+    # Create notification for the idea owner (unless commenting on own idea)
+    idea = await fetch_one("SELECT owner_id FROM ideas WHERE id = %s", (idea_id,))
+    if idea and idea["owner_id"] != user["sub"]:
+        actor_name = user.get("name") or "Someone"
+        message = f"{actor_name} commented on your idea"
+        await create_notification(
+            user_id=idea["owner_id"],
+            actor_id=user["sub"],
+            notif_type="comment",
+            idea_id=str(idea_id),
+            message=message,
+        )
+
     return CommentResponse(
         id=row["id"],
         idea_id=row["idea_id"],
@@ -668,6 +683,20 @@ async def react(idea_id: UUID, payload: ReactionCreate, request: Request):
         )
         action = "added"
 
+        # Create notification for the idea owner (unless reacting to own idea)
+        idea = await fetch_one("SELECT owner_id, title FROM ideas WHERE id = %s", (idea_id,))
+        if idea and idea["owner_id"] != user["sub"]:
+            actor_name = user.get("name") or "Someone"
+            reaction_label = reaction_type.replace("_", " ").title()
+            message = f"{actor_name} {reaction_type}d your idea"
+            await create_notification(
+                user_id=idea["owner_id"],
+                actor_id=user["sub"],
+                notif_type="upvote" if reaction_type == "upvote" else "upvote",
+                idea_id=str(idea_id),
+                message=message,
+            )
+
     user_rows = await fetch_all(
         "SELECT type FROM reactions WHERE idea_id = %s AND user_id = %s",
         (idea_id, user["sub"]),
@@ -691,6 +720,14 @@ async def express_interest(idea_id: UUID, payload: InterestCreate, request: Requ
     await _require_visible_idea(idea_id, user["sub"])
 
     await upsert_user(user["sub"], user.get("email"), user.get("name"), user.get("picture"))
+
+    # Check if this is a new interest (not an update)
+    existing = await fetch_one(
+        "SELECT id FROM interests WHERE idea_id = %s AND user_id = %s",
+        (idea_id, user["sub"]),
+    )
+    is_new = existing is None
+
     row = await fetch_one(
         """
         INSERT INTO interests (idea_id, user_id, message)
@@ -700,6 +737,21 @@ async def express_interest(idea_id: UUID, payload: InterestCreate, request: Requ
         """,
         (idea_id, user["sub"], payload.message),
     )
+
+    # Create notification only for new interests (not updates) and if not own idea
+    if is_new:
+        idea = await fetch_one("SELECT owner_id FROM ideas WHERE id = %s", (idea_id,))
+        if idea and idea["owner_id"] != user["sub"]:
+            actor_name = user.get("name") or "Someone"
+            message = f"{actor_name} expressed interest in your idea"
+            await create_notification(
+                user_id=idea["owner_id"],
+                actor_id=user["sub"],
+                notif_type="interest",
+                idea_id=str(idea_id),
+                message=message,
+            )
+
     return InterestResponse(
         id=row["id"],
         idea_id=row["idea_id"],
@@ -744,3 +796,23 @@ async def list_interest(idea_id: UUID, request: Request):
         for r in rows
     ]
     return {"interests": interests, "count": len(interests)}
+
+
+@router.delete("/ideas/{idea_id}", status_code=204)
+async def delete_idea(idea_id: UUID, request: Request):
+    """Delete an idea (owner only). Cascades to comments, reactions, interests, and notifications."""
+    user = _require_user(request)
+    idea = await fetch_one("SELECT owner_id FROM ideas WHERE id = %s", (idea_id,))
+    if not idea:
+        raise HTTPException(status_code=404, detail="Idea not found.")
+    if idea["owner_id"] != user["sub"]:
+        raise HTTPException(status_code=403, detail="Only the idea owner can delete this idea.")
+
+    # Delete cascades: comments → reactions → interests → notifications → idea
+    await execute("DELETE FROM comments WHERE idea_id = %s", (idea_id,))
+    await execute("DELETE FROM reactions WHERE idea_id = %s", (idea_id,))
+    await execute("DELETE FROM interests WHERE idea_id = %s", (idea_id,))
+    await execute("DELETE FROM notifications WHERE idea_id = %s", (idea_id,))
+    await execute("DELETE FROM ideas WHERE id = %s", (idea_id,))
+
+    return None

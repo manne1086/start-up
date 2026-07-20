@@ -12,6 +12,8 @@ import {
   GitFork,
   Hand,
   X,
+  Shield,
+  Heart,
 } from 'lucide-react';
 import GlobalNavbar from './GlobalNavbar';
 
@@ -71,6 +73,36 @@ function relativeTime(iso: string): string {
   return `${Math.floor(months / 12)}y ago`;
 }
 
+function UserAvatar({ picture, name, size = 40 }: { picture: string | null; name: string | null; size?: number }) {
+  const initials = name
+    ?.split(' ')
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase() || '?';
+
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        backgroundImage: picture ? `url('${picture}')` : undefined,
+      }}
+      className="rounded-full bg-cover bg-center border-2 border-[#6C47FF] transition-all duration-200 hover:border-[#00D4AA] flex-shrink-0"
+      title={name || 'User'}
+    >
+      {!picture && (
+        <div
+          className="w-full h-full rounded-full flex items-center justify-center text-sm font-bold bg-gradient-to-br from-[#6C47FF] to-[#00D4AA] text-white"
+          style={{ fontSize: size / 2.5 }}
+        >
+          {initials}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Section({
   title,
   isOpen,
@@ -83,10 +115,10 @@ function Section({
   children: any;
 }) {
   return (
-    <div className="border-2 border-[#111118] bg-[#111118]">
+    <div className="border border-white/[0.06] bg-[#111118] rounded-lg overflow-hidden">
       <button
         onClick={onToggle}
-        className="w-full p-5 flex items-center justify-between bg-[#0A0A0F] border-b-2 border-[#111118] hover:border-[#6C47FF] transition-colors"
+        className="w-full p-5 flex items-center justify-between bg-[#0D0D14] border-b border-white/[0.06] hover:bg-[#111118] transition-colors"
       >
         <h2 className="text-sm font-black text-white uppercase tracking-widest">{title}</h2>
         <ChevronDown className={`w-4 h-4 text-[#888899] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -107,7 +139,7 @@ function Field({ label, value }: { label: string; value: any }) {
 }
 
 const THREAT_BADGE: Record<string, string> = {
-  High: 'border-[#FF4D4F]/30 bg-[#FF4D4F]/10 text-[#FF4D4F]',
+  High: 'border-[#FF6B6B]/30 bg-[#FF6B6B]/10 text-[#FF6B6B]',
   Medium: 'border-amber-500/30 bg-amber-500/10 text-amber-500',
   Low: 'border-[#00D4AA]/30 bg-[#00D4AA]/10 text-[#00D4AA]',
 };
@@ -340,9 +372,9 @@ export default function IdeaDetail({
     return (
       <button
         onClick={() => handleReact(type)}
-        className={`px-4 py-2.5 border-2 font-bold text-sm transition-all flex items-center gap-2 ${
+        className={`px-4 py-2.5 border font-bold text-sm transition-all flex items-center gap-2 rounded-lg ${
           active
-            ? `${accent.activeBg} ${accent.border} ${accent.activeText}`
+            ? `${accent.activeBg} ${accent.border} ${accent.activeText} shadow-[0_0_12px_rgba(108,71,255,0.2)]`
             : `bg-transparent ${accent.border} ${accent.text} ${accent.hover}`
         }`}
       >
@@ -355,56 +387,62 @@ export default function IdeaDetail({
 
   function renderComment(c: Comment, depth: number) {
     return (
-      <div key={c.id} className={depth > 0 ? 'mt-4 pl-4 border-l-2 border-[#111118]' : 'mt-5'}>
-        <div className="flex items-center gap-2 mb-1">
-          {c.author?.username ? (
-            <button
-              onClick={() => navigate(`/users/${c.author.username}`)}
-              className="text-sm font-bold text-white hover:text-[#00D4AA] transition-colors"
-            >
-              {c.author.name || c.author.username}
-            </button>
-          ) : (
-            <span className="text-sm font-bold text-white">{c.author?.name || 'Anonymous'}</span>
-          )}
-          <span className="text-xs text-[#555566] font-medium">{relativeTime(c.created_at)}</span>
-        </div>
-        <p className="text-sm text-[#F0F0F0]/90 leading-relaxed whitespace-pre-wrap">{c.content}</p>
-        <button
-          onClick={() => {
-            setReplyTo(replyTo === c.id ? null : c.id);
-            setReplyText('');
-          }}
-          className="mt-1 text-xs font-bold text-[#888899] hover:text-[#00D4AA] transition-colors"
-        >
-          Reply
-        </button>
-
-        {replyTo === c.id && (
-          <div className="mt-3 flex flex-col gap-2">
-            <textarea
-              value={replyText}
-              onChange={(e) => setReplyText(e.target.value)}
-              placeholder={`Reply to ${c.author?.name || 'this comment'}…`}
-              className="w-full h-[70px] bg-[#0A0A0F] border border-[#111118] text-[#F0F0F0] px-4 py-2 text-sm focus:outline-none focus:border-[#6C47FF] transition-colors resize-none"
-            />
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => submitComment(c.id, replyText)}
-                disabled={posting || !replyText.trim()}
-                className="px-4 py-2 bg-[#6C47FF] border-2 border-[#6C47FF] text-white font-bold text-xs hover:bg-[#111118] hover:text-[#6C47FF] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Reply
-              </button>
-              <button
-                onClick={() => setReplyTo(null)}
-                className="text-xs font-bold text-[#888899] hover:text-white transition-colors"
-              >
-                Cancel
-              </button>
+      <div key={c.id} className={depth > 0 ? 'mt-4 ml-4 pl-4 border-l border-white/[0.06]' : 'mt-5'}>
+        <div className="flex items-start gap-3 mb-2">
+          <UserAvatar picture={c.author?.picture} name={c.author?.name} size={28} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              {c.author?.username ? (
+                <button
+                  onClick={() => navigate(`/users/${c.author.username}`)}
+                  className="text-sm font-bold text-white hover:text-[#00D4AA] transition-colors"
+                >
+                  {c.author.name || c.author.username}
+                </button>
+              ) : (
+                <span className="text-sm font-bold text-white">{c.author?.name || 'Anonymous'}</span>
+              )}
+              <Shield className="w-3 h-3 text-[#00D4AA]" />
+              <span className="text-xs text-[#555566]">{relativeTime(c.created_at)}</span>
             </div>
+            <p className="text-sm text-[#E0E0EE] leading-relaxed whitespace-pre-wrap">{c.content}</p>
+            <button
+              onClick={() => {
+                setReplyTo(replyTo === c.id ? null : c.id);
+                setReplyText('');
+              }}
+              className="mt-2 text-xs font-bold text-[#888899] hover:text-[#00D4AA] transition-colors"
+            >
+              Reply
+            </button>
+
+            {replyTo === c.id && (
+              <div className="mt-3 flex flex-col gap-2">
+                <textarea
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  placeholder={`Reply to ${c.author?.name || 'this comment'}…`}
+                  className="w-full h-[70px] bg-[#0D0D14] border border-white/[0.08] text-[#F0F0F0] px-4 py-2 text-sm focus:outline-none focus:border-[#6C47FF] focus:shadow-[0_0_12px_rgba(108,71,255,0.2)] transition-all resize-none rounded-lg"
+                />
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => submitComment(c.id, replyText)}
+                    disabled={posting || !replyText.trim()}
+                    className="px-4 py-2 bg-[#6C47FF] border border-[#6C47FF] text-white font-bold text-xs hover:bg-[#7D5AFF] transition-all disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+                  >
+                    Reply
+                  </button>
+                  <button
+                    onClick={() => setReplyTo(null)}
+                    className="text-xs font-bold text-[#888899] hover:text-white transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         {c.replies?.length ? c.replies.map((r) => renderComment(r, depth + 1)) : null}
       </div>
@@ -412,15 +450,15 @@ export default function IdeaDetail({
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-[#F0F0F0] flex flex-col font-sans pb-12">
+    <div className="min-h-screen bg-[#07070C] text-[#F0F0F0] flex flex-col font-sans pb-12">
       <GlobalNavbar />
 
       {/* Express Interest Modal */}
       {interestOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70" onClick={() => setInterestOpen(false)} />
-          <div className="relative w-full max-w-md border-2 border-[#111118] bg-[#0A0A0F] shadow-[8px_8px_0px_#6C47FF]">
-            <div className="p-5 border-b-2 border-[#111118] flex items-center justify-between">
+          <div className="relative w-full max-w-md border border-white/[0.1] bg-[#111118] rounded-lg shadow-[0_0_30px_rgba(108,71,255,0.3)]">
+            <div className="p-5 border-b border-white/[0.06] flex items-center justify-between">
               <h3 className="text-sm font-black text-white uppercase tracking-widest">Express Interest</h3>
               <button onClick={() => setInterestOpen(false)} className="text-[#888899] hover:text-white transition-colors">
                 <X className="w-4 h-4" />
@@ -434,13 +472,13 @@ export default function IdeaDetail({
                 value={interestMsg}
                 onChange={(e) => setInterestMsg(e.target.value)}
                 placeholder="Optional message — introduce yourself, share what you can contribute…"
-                className="w-full h-[100px] bg-[#111118] border border-[#111118] text-[#F0F0F0] px-4 py-3 text-sm focus:outline-none focus:border-[#6C47FF] transition-colors resize-none"
+                className="w-full h-[100px] bg-[#0D0D14] border border-white/[0.08] text-[#F0F0F0] px-4 py-3 text-sm focus:outline-none focus:border-[#6C47FF] focus:shadow-[0_0_12px_rgba(108,71,255,0.2)] transition-all resize-none rounded-lg"
               />
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleExpressInterest}
                   disabled={interestSubmitting}
-                  className="px-5 py-2.5 bg-[#6C47FF] border-2 border-[#6C47FF] text-white font-bold text-sm hover:bg-[#111118] hover:text-[#6C47FF] shadow-[4px_4px_0px_#00D4AA] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-5 py-2.5 bg-[#6C47FF] border border-[#6C47FF] text-white font-bold text-sm hover:bg-[#7D5AFF] shadow-[0_0_12px_rgba(108,71,255,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                 >
                   {interestSubmitting ? 'Sending…' : 'Send Interest'}
                 </button>
@@ -467,14 +505,14 @@ export default function IdeaDetail({
         </div>
 
         {error && (
-          <div className="mb-6 border-2 border-[#FF4D4F]/30 bg-[#FF4D4F]/10 text-[#FF4D4F] px-4 py-3 text-sm font-bold flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-[#FF4D4F] animate-pulse shrink-0" />
+          <div className="mb-6 border border-[#FF6B6B]/30 bg-[#FF6B6B]/10 text-[#FF6B6B] px-4 py-3 text-sm font-bold flex items-center gap-3 rounded-lg">
+            <div className="w-2 h-2 rounded-full bg-[#FF6B6B] animate-pulse shrink-0" />
             {error}
           </div>
         )}
 
         {loading ? (
-          <div className="border-2 border-[#111118] bg-[#111118] p-12 flex items-center justify-center gap-3 text-[#888899]">
+          <div className="border border-white/[0.06] bg-[#111118] p-12 flex items-center justify-center gap-3 text-[#888899] rounded-lg">
             <div
               className="w-4 h-4 border-2 border-[#888899]/30 border-t-[#888899] rounded-full"
               style={{ animation: 'spin 0.8s linear infinite' }}
@@ -483,77 +521,76 @@ export default function IdeaDetail({
           </div>
         ) : !idea ? null : (
           <>
-            {/* Header */}
+            {/* Header with creator info */}
             <div className="mb-8">
-              <div className="flex items-start justify-between gap-4 flex-wrap">
-                <div className="min-w-0">
-                  <h1 className="text-3xl font-black text-white tracking-tight">{idea.title}</h1>
-                  <div className="flex items-center gap-3 mt-3 flex-wrap">
-                    {idea.domain && (
-                      <span className="px-2 py-1 border border-[#6C47FF]/30 bg-[#6C47FF]/10 text-[#6C47FF] text-xs font-bold uppercase">
-                        {idea.domain}
-                      </span>
-                    )}
-                    {idea.ai_validation_score != null ? (
-                      <span className={`px-2 py-1 text-xs font-bold uppercase border flex items-center gap-1 ${
-                        idea.ai_validation_score >= 70
-                          ? 'border-[#00D4AA]/30 bg-[#00D4AA]/10 text-[#00D4AA]'
-                          : idea.ai_validation_score >= 40
-                          ? 'border-amber-500/30 bg-amber-500/10 text-amber-500'
-                          : 'border-[#FF4D4F]/30 bg-[#FF4D4F]/10 text-[#FF4D4F]'
-                      }`}>
-                        <CheckCircle2 className="w-3 h-3" /> Validated {Math.round(idea.ai_validation_score)}
-                      </span>
-                    ) : (
-                      <span className="px-2 py-1 text-xs font-bold uppercase border border-[#888899]/30 bg-[#888899]/10 text-[#888899]">
-                        Unvalidated
-                      </span>
-                    )}
-                    <span className="text-xs text-[#555566] font-medium">
-                      by{' '}
-                      {idea.owner?.username ? (
-                        <button
-                          onClick={() => navigate(`/users/${idea.owner.username}`)}
-                          className="hover:text-[#00D4AA] transition-colors"
-                        >
-                          {idea.owner.name || idea.owner.username}
-                        </button>
-                      ) : (
-                        idea.owner?.name || 'Anonymous'
-                      )}
-                      {' '}· {relativeTime(idea.created_at)}
-                    </span>
-                    {idea.forked_from_id && (
+              <div className="flex items-start gap-4 mb-6 flex-wrap">
+                <UserAvatar picture={idea.owner?.picture} name={idea.owner?.name} size={48} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    {idea.owner?.username ? (
                       <button
-                        onClick={() => onOpenIdea?.(idea.forked_from_id as string)}
-                        className="text-xs font-bold text-[#888899] hover:text-[#00D4AA] transition-colors flex items-center gap-1"
+                        onClick={() => navigate(`/users/${idea.owner.username}`)}
+                        className="text-sm font-bold text-[#F0F0F0] hover:text-[#00D4AA] transition-colors"
                       >
-                        <GitFork className="w-3 h-3" /> Forked from original
+                        {idea.owner.name || idea.owner.username}
                       </button>
+                    ) : (
+                      <span className="text-sm font-bold text-[#F0F0F0]">{idea.owner?.name || 'Anonymous'}</span>
                     )}
+                    <Shield className="w-4 h-4 text-[#00D4AA]" />
                   </div>
+                  <p className="text-xs text-[#555566]">
+                    Published {relativeTime(idea.created_at)}
+                  </p>
                 </div>
 
                 <div className="flex items-center gap-3 shrink-0">
                   <button
                     onClick={() => setInterestOpen(true)}
                     disabled={interestSent}
-                    className="px-5 py-2.5 bg-[#6C47FF] border-2 border-[#6C47FF] text-white font-bold text-sm hover:bg-[#111118] hover:text-[#6C47FF] shadow-[4px_4px_0px_#00D4AA] transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-5 py-2.5 bg-[#6C47FF] border border-[#6C47FF] text-white font-bold text-sm hover:bg-[#7D5AFF] shadow-[0_0_12px_rgba(108,71,255,0.3)] transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                   >
                     <Hand className="w-4 h-4" /> {interestSent ? 'Interest Sent' : 'Express Interest'}
                   </button>
                   <button
                     onClick={handleFork}
                     disabled={forking}
-                    className="px-5 py-2.5 bg-transparent border-2 border-[#00D4AA] text-[#00D4AA] font-bold text-sm hover:bg-[#00D4AA] hover:text-[#0A0A0F] transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-5 py-2.5 bg-transparent border border-[#00D4AA]/50 text-[#00D4AA] font-bold text-sm hover:bg-[#00D4AA] hover:text-[#07070C] transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                   >
                     <GitFork className="w-4 h-4" /> {forking ? 'Forking…' : 'Fork'}
                   </button>
                 </div>
               </div>
 
+              {/* Title */}
+              <h1 className="text-4xl font-black text-white tracking-tight mb-4">{idea.title}</h1>
+
+              {/* Badges */}
+              <div className="flex items-center gap-3 mb-6 flex-wrap">
+                {idea.domain && (
+                  <span className="px-3 py-1.5 border border-[#6C47FF]/30 bg-[#6C47FF]/10 text-[#6C47FF] text-xs font-bold rounded-md">
+                    {idea.domain}
+                  </span>
+                )}
+                {idea.ai_validation_score != null ? (
+                  <span className={`px-3 py-1.5 text-xs font-bold rounded-md border flex items-center gap-1 ${
+                    idea.ai_validation_score >= 70
+                      ? 'border-[#00D4AA]/30 bg-[#00D4AA]/10 text-[#00D4AA]'
+                      : idea.ai_validation_score >= 40
+                      ? 'border-amber-500/30 bg-amber-500/10 text-amber-500'
+                      : 'border-[#FF6B6B]/30 bg-[#FF6B6B]/10 text-[#FF6B6B]'
+                  }`}>
+                    <CheckCircle2 className="w-3 h-3" /> Validated {Math.round(idea.ai_validation_score)}
+                  </span>
+                ) : (
+                  <span className="px-3 py-1.5 text-xs font-bold rounded-md border border-[#888899]/30 bg-[#888899]/10 text-[#888899]">
+                    Unvalidated
+                  </span>
+                )}
+              </div>
+
               {/* Reaction buttons */}
-              <div className="flex items-center gap-3 mt-6 flex-wrap">
+              <div className="flex items-center gap-3 flex-wrap">
                 {reactionButton('upvote', 'Upvote', ArrowBigUp, counts.upvote, {
                   border: 'border-[#6C47FF]',
                   text: 'text-[#6C47FF]',
@@ -565,15 +602,15 @@ export default function IdeaDetail({
                   border: 'border-[#00D4AA]',
                   text: 'text-[#00D4AA]',
                   activeBg: 'bg-[#00D4AA]',
-                  activeText: 'text-[#0A0A0F]',
-                  hover: 'hover:bg-[#00D4AA] hover:text-[#0A0A0F]',
+                  activeText: 'text-[#07070C]',
+                  hover: 'hover:bg-[#00D4AA] hover:text-[#07070C]',
                 })}
                 {reactionButton('have_this_problem', 'Have This Problem', AlertTriangle, counts.have_this_problem, {
                   border: 'border-amber-500',
                   text: 'text-amber-500',
                   activeBg: 'bg-amber-500',
-                  activeText: 'text-[#0A0A0F]',
-                  hover: 'hover:bg-amber-500 hover:text-[#0A0A0F]',
+                  activeText: 'text-[#07070C]',
+                  hover: 'hover:bg-amber-500 hover:text-[#07070C]',
                 })}
               </div>
             </div>
@@ -583,7 +620,7 @@ export default function IdeaDetail({
               {/* Main column — AI validation summary */}
               <div className="flex flex-col gap-6 min-w-0">
                 {!summary ? (
-                  <div className="border-2 border-[#111118] bg-[#111118] p-8 text-center text-sm font-bold text-[#888899]">
+                  <div className="border border-white/[0.06] bg-[#111118] p-8 text-center text-sm font-bold text-[#888899] rounded-lg">
                     This idea was published without an AI validation summary.
                   </div>
                 ) : (
@@ -629,7 +666,7 @@ export default function IdeaDetail({
                           {competitors.map((c: any, i: number) => (
                             <div
                               key={i}
-                              className="flex items-center justify-between gap-4 bg-[#0A0A0F] border border-[#111118] p-3"
+                              className="flex items-center justify-between gap-4 bg-[#0D0D14] border border-white/[0.06] p-3 rounded-lg"
                             >
                               <div className="min-w-0">
                                 <div className="text-sm font-bold text-white truncate">{c.name}</div>
@@ -637,7 +674,7 @@ export default function IdeaDetail({
                               </div>
                               {c.threat_level && (
                                 <span
-                                  className={`px-2 py-1 text-xs font-bold uppercase border shrink-0 ${
+                                  className={`px-2 py-1 text-xs font-bold rounded border shrink-0 ${
                                     THREAT_BADGE[c.threat_level] ?? THREAT_BADGE.Low
                                   }`}
                                 >
@@ -664,7 +701,7 @@ export default function IdeaDetail({
                           </div>
                           <Field label="Go-to-Market" value={business.gtm_strategy} />
                           {financials && (
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-[#0A0A0F]">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-white/[0.06]">
                               <Field label="NPV" value={financials.npv} />
                               <Field label="IRR" value={financials.irr} />
                               <Field label="Payback (mo)" value={financials.payback_months} />
@@ -694,43 +731,43 @@ export default function IdeaDetail({
               {/* Sidebar */}
               <div className="flex flex-col gap-6">
                 {/* About */}
-                <div className="border-2 border-[#111118] bg-[#111118] p-5">
+                <div className="border border-white/[0.06] bg-[#111118] p-5 rounded-lg">
                   <div className="text-xs font-black text-[#888899] uppercase tracking-widest mb-3">About</div>
                   {idea.one_liner && <p className="text-sm text-[#F0F0F0] leading-relaxed mb-4">{idea.one_liner}</p>}
                   {idea.domain && (
-                    <span className="px-2 py-1 border border-[#6C47FF]/30 bg-[#6C47FF]/10 text-[#6C47FF] text-xs font-bold uppercase">
+                    <span className="px-3 py-1.5 border border-[#6C47FF]/30 bg-[#6C47FF]/10 text-[#6C47FF] text-xs font-bold rounded-md">
                       {idea.domain}
                     </span>
                   )}
                 </div>
 
                 {/* Stats */}
-                <div className="border-2 border-[#111118] bg-[#111118] p-5">
-                  <div className="text-xs font-black text-[#888899] uppercase tracking-widest mb-4">Stats</div>
+                <div className="border border-white/[0.06] bg-[#111118] p-5 rounded-lg">
+                  <div className="text-xs font-black text-[#888899] uppercase tracking-widest mb-4">Engagement</div>
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between text-sm">
                       <span className="flex items-center gap-2 text-[#888899] font-medium">
                         <ArrowBigUp className="w-4 h-4" /> Upvotes
                       </span>
-                      <span className="font-mono font-bold text-white">{counts.upvote}</span>
+                      <span className="font-mono font-bold text-[#00D4AA]">{counts.upvote}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="flex items-center gap-2 text-[#888899] font-medium">
                         <MessageSquare className="w-4 h-4" /> Comments
                       </span>
-                      <span className="font-mono font-bold text-white">{idea.comment_count}</span>
+                      <span className="font-mono font-bold text-[#6C47FF]">{idea.comment_count}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="flex items-center gap-2 text-[#888899] font-medium">
                         <Users className="w-4 h-4" /> Interested
                       </span>
-                      <span className="font-mono font-bold text-white">{idea.interest_count}</span>
+                      <span className="font-mono font-bold text-[#F0F0F0]">{idea.interest_count}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Interested Contributors */}
-                <div className="border-2 border-[#111118] bg-[#111118] p-5">
+                <div className="border border-white/[0.06] bg-[#111118] p-5 rounded-lg">
                   <div className="text-xs font-black text-[#888899] uppercase tracking-widest mb-4">
                     Interested Contributors
                   </div>
@@ -738,21 +775,35 @@ export default function IdeaDetail({
                     contributors.length > 0 ? (
                       <div className="flex flex-col gap-3">
                         {contributors.map((it) => (
-                          <div key={it.id} className="flex flex-col gap-0.5">
-                            <div className="flex items-center gap-2">
-                              {it.user?.username ? (
-                                <button
-                                  onClick={() => navigate(`/users/${it.user!.username}`)}
-                                  className="text-sm font-bold text-white hover:text-[#00D4AA] transition-colors"
-                                >
-                                  {it.user.name || it.user.username}
-                                </button>
-                              ) : (
-                                <span className="text-sm font-bold text-white">{it.user?.name || 'Anonymous'}</span>
-                              )}
-                              <span className="text-xs text-[#555566]">{relativeTime(it.created_at)}</span>
+                          <div key={it.id} className="border border-white/[0.06] bg-[#0D0D14] rounded-lg p-3.5">
+                            <div className="flex items-start gap-2 mb-2">
+                              <UserAvatar picture={it.user?.picture} name={it.user?.name} size={28} />
+                              <div className="flex-1 min-w-0">
+                                {it.user?.username ? (
+                                  <button
+                                    onClick={() => navigate(`/users/${it.user!.username}`)}
+                                    className="text-sm font-bold text-white hover:text-[#00D4AA] transition-colors truncate block"
+                                  >
+                                    {it.user.name || it.user.username}
+                                  </button>
+                                ) : (
+                                  <span className="text-sm font-bold text-white truncate block">{it.user?.name || 'Anonymous'}</span>
+                                )}
+                                <span className="text-xs text-[#555566]">{relativeTime(it.created_at)}</span>
+                              </div>
                             </div>
-                            {it.message && <p className="text-xs text-[#888899] leading-relaxed">{it.message}</p>}
+                            {it.message && (
+                              <div className="ml-10">
+                                <p className="text-sm text-[#E0E0EE] leading-relaxed bg-[#111118] border border-white/[0.06] rounded p-2.5">
+                                  "{it.message}"
+                                </p>
+                              </div>
+                            )}
+                            {!it.message && (
+                              <div className="ml-10">
+                                <p className="text-xs text-[#555566] italic">No message provided</p>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -767,10 +818,10 @@ export default function IdeaDetail({
                 </div>
 
                 {/* Forked by X people */}
-                <div className="border-2 border-[#111118] bg-[#111118] p-5">
+                <div className="border border-white/[0.06] bg-[#111118] p-5 rounded-lg">
                   <div className="text-xs font-black text-[#888899] uppercase tracking-widest mb-4 flex items-center gap-2">
                     <GitFork className="w-3.5 h-3.5" />
-                    Forked by {forks.length} {forks.length === 1 ? 'person' : 'people'}
+                    Forked by {forks.length}
                   </div>
                   {forks.length > 0 ? (
                     <div className="flex flex-col gap-3">
@@ -806,8 +857,8 @@ export default function IdeaDetail({
             </div>
 
             {/* Comments */}
-            <div className="mt-10 border-2 border-[#111118] bg-[#111118]">
-              <div className="p-5 bg-[#0A0A0F] border-b-2 border-[#111118]">
+            <div className="mt-10 border border-white/[0.06] bg-[#111118] rounded-lg overflow-hidden">
+              <div className="p-5 bg-[#0D0D14] border-b border-white/[0.06]">
                 <h2 className="text-sm font-black text-white uppercase tracking-widest">
                   Comments <span className="text-[#555566]">({idea.comment_count})</span>
                 </h2>
@@ -815,18 +866,18 @@ export default function IdeaDetail({
 
               <div className="p-5">
                 {/* New comment box */}
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2 mb-6">
                   <textarea
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="Add a comment…"
-                    className="w-full h-[90px] bg-[#0A0A0F] border border-[#111118] text-[#F0F0F0] px-4 py-3 text-sm focus:outline-none focus:border-[#6C47FF] transition-colors resize-none"
+                    placeholder="Add a thoughtful comment…"
+                    className="w-full h-[90px] bg-[#0D0D14] border border-white/[0.08] text-[#F0F0F0] px-4 py-3 text-sm focus:outline-none focus:border-[#6C47FF] focus:shadow-[0_0_12px_rgba(108,71,255,0.2)] transition-all resize-none rounded-lg"
                   />
                   <div>
                     <button
                       onClick={() => submitComment(null, commentText)}
                       disabled={posting || !commentText.trim()}
-                      className="px-6 py-2.5 bg-[#6C47FF] border-2 border-[#6C47FF] text-white font-black text-sm hover:bg-[#111118] hover:text-[#6C47FF] shadow-[4px_4px_0px_#00D4AA] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#6C47FF] disabled:hover:text-white"
+                      className="px-6 py-2.5 bg-[#6C47FF] border border-[#6C47FF] text-white font-bold text-sm hover:bg-[#7D5AFF] shadow-[0_0_12px_rgba(108,71,255,0.3)] transition-all disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
                     >
                       {posting ? 'Posting…' : 'Comment'}
                     </button>

@@ -172,4 +172,6 @@ class StartupState(BaseModel):
     awaiting_human_review: bool = False
     human_approved: bool = False
     human_patch: dict = {}
+    retry_counts: dict[str, int] = {}
+    revision_reasons: dict[str, str] = {}
 

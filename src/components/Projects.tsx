@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, MoreHorizontal, ArrowRight, ArrowBigUp, MessageSquare, Users, Hand, ChevronDown } from 'lucide-react';
+import { Plus, MoreHorizontal, ArrowRight, ArrowBigUp, MessageSquare, Users, Hand, ChevronDown, Trash2 } from 'lucide-react';
 import { useRouter } from '../router';
 import GlobalNavbar from './GlobalNavbar';
 import { useGeneration } from '../generation';
@@ -54,6 +54,7 @@ export default function Projects() {
   const [myIdeasLoading, setMyIdeasLoading] = useState(false);
   const [myIdeasError, setMyIdeasError] = useState('');
   const [expandedInterests, setExpandedInterests] = useState<Set<string>>(new Set());
+  const [deletingIdeaId, setDeletingIdeaId] = useState<string | null>(null);
 
   const projects = backendState
     ? [
@@ -100,6 +101,24 @@ export default function Projects() {
       else next.add(ideaId);
       return next;
     });
+  };
+
+  const handleDeleteIdea = async (ideaId: string, ideaTitle: string) => {
+    if (!window.confirm(`Delete "${ideaTitle}"? This cannot be undone.`)) return;
+
+    setDeletingIdeaId(ideaId);
+    try {
+      const res = await fetch(`${API_URL}/api/ideas/${ideaId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error(`Failed to delete idea (${res.status})`);
+      setMyIdeas((prev) => prev.filter((idea) => idea.id !== ideaId));
+    } catch (err: any) {
+      setMyIdeasError(err?.message ?? 'Failed to delete idea.');
+    } finally {
+      setDeletingIdeaId(null);
+    }
   };
 
   return (
@@ -276,12 +295,22 @@ export default function Projects() {
                           </div>
                         </div>
 
-                        <button
-                          onClick={() => rrNavigate(`/ideas/${idea.id}`)}
-                          className="text-sm font-bold text-[#F0F0F0] hover:text-[#00D4AA] flex items-center gap-2 transition-colors shrink-0"
-                        >
-                          View <ArrowRight className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <button
+                            onClick={() => rrNavigate(`/ideas/${idea.id}`)}
+                            className="text-sm font-bold text-[#F0F0F0] hover:text-[#00D4AA] flex items-center gap-2 transition-colors"
+                          >
+                            View <ArrowRight className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteIdea(idea.id, idea.title)}
+                            disabled={deletingIdeaId === idea.id}
+                            className="text-[#888899] hover:text-[#FF4D4F] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Delete idea"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
 
                       {/* Interests toggle (owner-only data) */}

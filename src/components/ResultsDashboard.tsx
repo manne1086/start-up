@@ -18,9 +18,13 @@ import {
   ArrowLeft,
   Loader2,
   Users,
+  TrendingUp,
+  Target,
+  Zap,
+  BarChart3,
 } from 'lucide-react';
 import JSZip from 'jszip';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import GlobalNavbar from './GlobalNavbar';
 import { useGeneration } from '../generation';
 import { useRouter } from '../router';
@@ -228,7 +232,7 @@ export default function ResultsDashboard() {
         ))}
       </div>
 
-      <main className="flex-1 w-full max-w-[1400px] mx-auto px-6 py-8">
+      <main className="flex-1 w-full max-w-[1400px] mx-auto px-6 py-12">
 
         {/* Back button */}
         <button onClick={() => navigate('projects')}
@@ -236,85 +240,185 @@ export default function ResultsDashboard() {
           <ArrowLeft className="w-4 h-4" /> Back to Projects
         </button>
 
-        {/* ── Hero Banner ── */}
-        <div className="w-full bg-[#00D4AA]/10 border-2 border-[#00D4AA]/50 rounded-2xl p-6 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 animate-fadeInUp shadow-[0_0_30px_rgba(0,212,170,0.15)]">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-[#00D4AA]/20 rounded-full flex items-center justify-center shrink-0 border border-[#00D4AA]/30">
-              <CheckCircle2 className="w-6 h-6 text-[#00D4AA]" />
-            </div>
+        {/* ── Header Section ── */}
+        <div className="mb-12 animate-fadeInUp">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
             <div>
-              <h2 className="text-xl md:text-2xl font-black text-white tracking-tight mb-1">
-                {ideaName} — Startup Package Complete
-              </h2>
-              <p className="text-sm text-[#00D4AA] font-semibold">Ready for investor review and execution.</p>
+              <h1 className="text-4xl md:text-5xl font-black text-white mb-2 tracking-tight">
+                {ideaName}
+              </h1>
+              <p className="text-base text-[#E0E0EE] font-medium">
+                Investment-grade startup analysis & package
+              </p>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <button onClick={handleShare}
-                    className="px-5 py-2.5 rounded-xl border-2 border-white/20 text-white font-bold text-sm hover:bg-white/10 transition-colors flex items-center gap-2">
-              <Share2 className="w-4 h-4" /> Share
-            </button>
-            <button onClick={handleDownloadZip}
-                    className="px-5 py-2.5 rounded-xl bg-[#6C47FF] border-2 border-[#6C47FF] text-white font-bold text-sm hover:bg-[#5a3ae0] hover:border-[#5a3ae0] transition-colors flex items-center gap-2 shadow-[0_0_15px_rgba(108,71,255,0.3)]">
-              <Download className="w-4 h-4" /> Download All (.zip)
-            </button>
+            <div className="flex items-center gap-2 text-xs font-bold text-[#00D4AA] uppercase tracking-wider bg-[#00D4AA]/10 px-3 py-1.5 rounded-lg border border-[#00D4AA]/30 w-fit">
+              <CheckCircle2 className="w-4 h-4" /> Generated & Ready
+            </div>
           </div>
         </div>
 
+        {/* ── Key Metrics Section ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12 animate-fadeInUp" style={{ animationDelay: '50ms' }}>
+          {[
+            {
+              icon: Globe,
+              label: 'Market Size (TAM)',
+              value: market?.tam?.toString() ?? '—',
+              subtext: 'Total Addressable',
+              accentColor: '#00D4AA',
+              trend: '↑'
+            },
+            {
+              icon: Target,
+              label: 'Opportunity Score',
+              value: market?.opportunity_score ? `${market.opportunity_score}%` : '—',
+              subtext: 'Market fit index',
+              accentColor: '#6C47FF',
+              trend: '↑'
+            },
+            {
+              icon: BarChart3,
+              label: 'Market Growth',
+              value: market?.growth_rate ? `${market.growth_rate}%` : '—',
+              subtext: 'YoY expansion',
+              accentColor: '#00D4AA',
+              trend: market?.growth_rate && market.growth_rate > 0 ? '↑' : '→'
+            },
+            {
+              icon: Zap,
+              label: 'Competitive Intensity',
+              value: market?.competitive_intensity ? market.competitive_intensity.charAt(0).toUpperCase() + market.competitive_intensity.slice(1) : '—',
+              subtext: 'Market saturation',
+              accentColor: '#FFB800',
+              trend: '='
+            },
+          ].map(({ icon: Icon, label, value, subtext, accentColor, trend }, i) => (
+            <div
+              key={label}
+              className="bg-[#111118] rounded-2xl p-5 border border-white/[0.06] hover:border-white/[0.12] transition-all group animate-fadeInUp"
+              style={{
+                animationDelay: `${100 + i * 50}ms`,
+                borderLeftWidth: '3px',
+                borderLeftColor: accentColor,
+              }}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <Icon className="w-5 h-5" style={{ color: accentColor }} />
+                <span className="text-xs font-bold uppercase tracking-widest text-[#888899]">{trend}</span>
+              </div>
+              <div className="text-xs text-[#888899] font-medium uppercase tracking-wider mb-1">{label}</div>
+              <div className="text-2xl font-black text-white mb-1" style={{ color: accentColor }}>
+                {value}
+              </div>
+              <div className="text-xs text-[#555566] font-medium">{subtext}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Export Section (Prominent CTAs) ── */}
+        <div className="mb-12 p-8 rounded-2xl bg-gradient-to-br from-[#6C47FF]/10 to-[#00D4AA]/10 border border-[#6C47FF]/30 animate-fadeInUp" style={{ animationDelay: '150ms' }}>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div>
+              <h3 className="text-xl font-black text-white mb-1">Your Startup Package</h3>
+              <p className="text-sm text-[#E0E0EE]">Download all generated assets and reports for investor presentations</p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+              <button onClick={handleDownloadZip}
+                      className="px-6 py-3 rounded-xl bg-[#6C47FF] border-2 border-[#6C47FF] text-white font-bold text-sm hover:bg-[#5a3ae0] hover:shadow-[0_0_20px_rgba(108,71,255,0.4)] transition-all flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(108,71,255,0.2)]">
+                <Download className="w-4 h-4" /> Download All
+              </button>
+              <button onClick={handleExportPdf} disabled={pdfLoading}
+                      className="px-6 py-3 rounded-xl bg-[#00D4AA]/10 border-2 border-[#00D4AA]/50 text-[#00D4AA] font-bold text-sm hover:bg-[#00D4AA]/20 hover:border-[#00D4AA] transition-all flex items-center justify-center gap-2 disabled:opacity-50">
+                {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+                {pdfLoading ? 'Generating PDF…' : 'Export PDF'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Data Visualization Grid ── */}
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
           {/* ── Main grid ── */}
           <div className="xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-            {/* Market Research card */}
-            <div className="bg-[#111118] rounded-2xl p-6 flex flex-col cursor-pointer card-hover animate-fadeInUp border-2 border-transparent hover:border-[#6C47FF]/50"
-                 style={{ animationDelay: '100ms' }}
+            {/* Market Research card — Aqua accent */}
+            <div className="bg-[#111118] rounded-2xl p-6 flex flex-col cursor-pointer transition-all duration-200 hover:border-[#00D4AA]/50 hover:shadow-[0_0_20px_rgba(0,212,170,0.1)] animate-fadeInUp border-2 border-white/[0.06]"
+                 style={{ animationDelay: '200ms', borderLeftWidth: '4px', borderLeftColor: '#00D4AA' }}
                  onClick={() => navigate('market')}>
               <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-[#888899]" />
+                  <div className="w-10 h-10 rounded-xl bg-[#00D4AA]/10 flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-[#00D4AA]" />
                   </div>
-                  <h6 className="font-bold text-[#F0F0F0] text-sm">Market Research</h6>
-                </div>
-                <div className="flex items-center gap-1 text-[10px] font-bold text-[#6C47FF] uppercase tracking-widest bg-[#6C47FF]/10 px-2 py-1 rounded-full">
-                  View <ArrowRight className="w-3 h-3" />
+                  <div>
+                    <h6 className="font-bold text-[#F0F0F0] text-sm">Market Research</h6>
+                    <p className="text-xs text-[#888899]">Primary market analysis</p>
+                  </div>
                 </div>
               </div>
               <div className="mb-6 flex-1">
                 <div className="font-black text-[#00D4AA] text-3xl tracking-tight mb-2">
-                  {market?.tam?.toString() ?? 'No data'}
+                  {market?.tam?.toString() ?? 'N/A'}
                 </div>
-                <div className="text-xs text-[#888899] font-medium">
-                  {market?.tam_source?.toString() ?? 'Backend market intelligence'}
+                <div className="text-xs text-[#888899] font-medium mb-3">
+                  Total Addressable Market
+                </div>
+                <div className="text-xs text-[#555566] bg-[#00D4AA]/5 px-2.5 py-1.5 rounded-lg w-fit">
+                  {market?.tam_source?.toString() ?? 'Market data'}
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 pt-4 border-t border-white/[0.06]">
                 {Array.isArray(market?.competitors)
                   ? (market.competitors as Array<Record<string, unknown>>).slice(0, 3).map((comp, i) => (
-                      <span key={i} className="px-2 py-1 bg-[#0A0A0F] border border-[#6C47FF]/30 text-[#888899] text-[10px] font-bold rounded-md">
+                      <span key={i} className="px-2.5 py-1 bg-[#00D4AA]/10 border border-[#00D4AA]/30 text-[#00D4AA] text-[10px] font-bold rounded-lg">
                         {comp.name?.toString() ?? 'Competitor'}
                       </span>
                     ))
                   : null}
               </div>
+              <div className="mt-4 flex items-center gap-2 text-[11px] font-bold text-[#00D4AA] uppercase tracking-widest cursor-pointer hover:gap-3 transition-all">
+                Explore <ArrowRight className="w-3 h-3" />
+              </div>
             </div>
 
-            {/* Financial Model card — spans 2 cols */}
-            <div className="md:col-span-2 bg-[#111118] rounded-2xl p-6 flex flex-col cursor-pointer card-hover animate-fadeInUp border-2 border-transparent hover:border-[#00D4AA]/50"
-                 style={{ animationDelay: '150ms' }}>
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                  <PieChart className="w-5 h-5 text-[#888899]" />
+            {/* Financial Model card — spans 2 cols, Purple accent */}
+            <div className="md:col-span-2 bg-[#111118] rounded-2xl p-6 flex flex-col cursor-pointer transition-all duration-200 hover:border-[#6C47FF]/50 hover:shadow-[0_0_20px_rgba(108,71,255,0.1)] animate-fadeInUp border-2 border-white/[0.06]"
+                 style={{ animationDelay: '250ms', borderLeftWidth: '4px', borderLeftColor: '#6C47FF' }}>
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#6C47FF]/10 flex items-center justify-center">
+                    <BarChart3 className="w-5 h-5 text-[#6C47FF]" />
+                  </div>
+                  <div>
+                    <h6 className="font-bold text-[#F0F0F0] text-sm">Financial Projections</h6>
+                    <p className="text-xs text-[#888899]">5-year revenue forecast</p>
+                  </div>
                 </div>
-                <h6 className="font-bold text-[#F0F0F0] text-sm">Financial Model</h6>
+                <span className="px-3 py-1 bg-[#6C47FF]/10 text-[#6C47FF] text-[10px] font-bold uppercase tracking-widest rounded-lg border border-[#6C47FF]/30">
+                  {chartData.length} Years
+                </span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center flex-1">
-                <div className="h-[140px] cursor-pointer" onClick={() => navigate('financials')}>
+                <div className="h-[160px] cursor-pointer rounded-xl bg-[#0A0A0F]/50 p-3 border border-[#6C47FF]/20" onClick={() => navigate('financials')}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#2A2A35" vertical={false} />
                       <XAxis dataKey="year" stroke="#888899" fontSize={10} tickLine={false} axisLine={false} />
                       <YAxis stroke="#888899" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `₹${v}L`} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#111118',
+                          border: '1px solid #6C47FF',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 12px rgba(108, 71, 255, 0.15)'
+                        }}
+                        formatter={(value) => `₹${Number(value).toFixed(1)}L`}
+                        labelStyle={{ color: '#F0F0F0' }}
+                      />
+                      <Legend
+                        wrapperStyle={{ color: '#888899', fontSize: '12px' }}
+                        formatter={(value) => value === 'revenue' ? 'Revenue' : 'Gross Profit'}
+                      />
                       {chartData.length > 0 && <Line type="monotone" dataKey="revenue" stroke="#6C47FF" strokeWidth={3} dot={false} animationDuration={1500} />}
                       {chartData.length > 0 && <Line type="monotone" dataKey="gp" stroke="#00D4AA" strokeWidth={3} dot={false} animationDuration={1500} />}
                     </LineChart>
@@ -323,23 +427,23 @@ export default function ResultsDashboard() {
                 <div className="flex flex-col gap-4">
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { label: 'NPV', val: financials?.npv ? `₹${financials.npv.toFixed(1)}` : '…' },
-                      { label: 'IRR', val: financials?.irr ? `${financials.irr.toFixed(0)}%` : '…' },
-                      { label: 'Payback', val: financials?.payback_months ? `${financials.payback_months}m` : '…' },
-                    ].map(({ label, val }) => (
-                      <div key={label} className="bg-[#0A0A0F] border border-[#1E1E28] rounded-xl p-3 text-center">
+                      { label: 'NPV', val: financials?.npv ? `₹${financials.npv.toFixed(1)}` : '—', color: '#00D4AA' },
+                      { label: 'IRR', val: financials?.irr ? `${financials.irr.toFixed(0)}%` : '—', color: '#6C47FF' },
+                      { label: 'Payback', val: financials?.payback_months ? `${financials.payback_months}m` : '—', color: '#00D4AA' },
+                    ].map(({ label, val, color }) => (
+                      <div key={label} className="bg-[#0A0A0F] border border-white/[0.06] hover:border-white/[0.12] rounded-xl p-3 text-center transition-all" style={{ borderLeftWidth: '2px', borderLeftColor: color }}>
                         <div className="text-[10px] font-bold text-[#888899] uppercase tracking-widest mb-1">{label}</div>
-                        <div className="text-base font-black text-[#00D4AA]">{val}</div>
+                        <div className="text-base font-black" style={{ color }}>{val}</div>
                       </div>
                     ))}
                   </div>
                   <div className="flex gap-3">
                     <button onClick={handleExcelExport}
-                            className="flex-1 py-2 bg-transparent border-2 border-[#1E1E28] text-[#888899] font-bold text-xs hover:border-[#00D4AA] hover:text-[#00D4AA] rounded-xl transition-colors flex items-center justify-center gap-2">
-                      <Download className="w-3 h-3" /> Excel
+                            className="flex-1 py-2.5 bg-[#0A0A0F] border-2 border-white/[0.06] text-[#888899] font-bold text-xs hover:border-[#6C47FF] hover:text-[#6C47FF] rounded-xl transition-all flex items-center justify-center gap-2">
+                      <Download className="w-3 h-3" /> CSV
                     </button>
                     <button onClick={() => navigate('financials')}
-                            className="flex-1 py-2 bg-[#6C47FF]/10 border-2 border-[#6C47FF]/30 text-[#6C47FF] font-bold text-xs hover:bg-[#6C47FF] hover:text-white rounded-xl transition-colors flex items-center justify-center gap-2">
+                            className="flex-1 py-2.5 bg-[#6C47FF]/10 border-2 border-[#6C47FF]/50 text-[#6C47FF] font-bold text-xs hover:bg-[#6C47FF] hover:text-white hover:border-[#6C47FF] rounded-xl transition-all flex items-center justify-center gap-2">
                       Interactive <ArrowRight className="w-3 h-3" />
                     </button>
                   </div>
@@ -347,112 +451,128 @@ export default function ResultsDashboard() {
               </div>
             </div>
 
-            {/* Legal card */}
-            <div className="bg-[#111118] rounded-2xl p-6 flex flex-col cursor-pointer card-hover animate-fadeInUp border-2 border-transparent hover:border-[#6C47FF]/50"
-                 style={{ animationDelay: '200ms' }}
+            {/* Legal card — Yellow/Warning accent */}
+            <div className="bg-[#111118] rounded-2xl p-6 flex flex-col cursor-pointer transition-all duration-200 hover:border-[#FFB800]/50 hover:shadow-[0_0_20px_rgba(255,184,0,0.1)] animate-fadeInUp border-2 border-white/[0.06]"
+                 style={{ animationDelay: '300ms', borderLeftWidth: '4px', borderLeftColor: '#FFB800' }}
                  onClick={() => navigate('legal')}>
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                  <Scale className="w-5 h-5 text-[#888899]" />
+                <div className="w-10 h-10 rounded-xl bg-[#FFB800]/10 flex items-center justify-center">
+                  <Scale className="w-5 h-5 text-[#FFB800]" />
                 </div>
-                <h6 className="font-bold text-[#F0F0F0] text-sm">Legal & Compliance</h6>
+                <div>
+                  <h6 className="font-bold text-[#F0F0F0] text-sm">Legal & Compliance</h6>
+                  <p className="text-xs text-[#888899]">Regulatory readiness</p>
+                </div>
               </div>
               <ul className="flex flex-col gap-3 flex-1 mb-6">
                 <li className="flex items-center gap-3 text-sm text-[#F0F0F0] font-medium">
-                  <CheckCircle2 className="w-4 h-4 text-[#00D4AA]" /> GDPR Safe
+                  <CheckCircle2 className="w-4 h-4 text-[#00D4AA]" /> GDPR Compliant
                 </li>
                 <li className="flex items-center gap-3 text-sm text-[#F0F0F0] font-medium">
                   <CheckCircle2 className="w-4 h-4 text-[#00D4AA]" />
-                  {legal?.entity_recommendation?.toString() ?? 'Entity pending'}
+                  {legal?.entity_recommendation?.toString() ?? 'Entity review pending'}
                 </li>
-                <li className="flex items-center gap-3 text-sm text-amber-500 font-medium">
-                  <AlertTriangle className="w-4 h-4" /> Review items in report
+                <li className="flex items-center gap-3 text-sm text-[#FFB800] font-medium">
+                  <AlertTriangle className="w-4 h-4" /> Review recommended
                 </li>
               </ul>
               <button onClick={(e) => { e.stopPropagation(); navigate('legal'); }}
-                      className="text-xs font-bold text-[#6C47FF] hover:text-white transition-colors flex items-center gap-1">
-                Download NDA <ArrowRight className="w-3 h-3" />
+                      className="text-xs font-bold text-[#FFB800] hover:text-white transition-colors flex items-center gap-1">
+                View Details <ArrowRight className="w-3 h-3" />
               </button>
             </div>
 
-            {/* Pitch Deck card */}
-            <div className="bg-[#111118] rounded-2xl p-6 flex flex-col cursor-pointer card-hover animate-fadeInUp border-2 border-transparent hover:border-[#6C47FF]/50"
-                 style={{ animationDelay: '250ms' }}
+            {/* Pitch Deck card — Purple accent */}
+            <div className="bg-[#111118] rounded-2xl p-6 flex flex-col cursor-pointer transition-all duration-200 hover:border-[#6C47FF]/50 hover:shadow-[0_0_20px_rgba(108,71,255,0.1)] animate-fadeInUp border-2 border-white/[0.06]"
+                 style={{ animationDelay: '350ms', borderLeftWidth: '4px', borderLeftColor: '#6C47FF' }}
                  onClick={() => navigate('pitch')}>
               <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                    <Presentation className="w-5 h-5 text-[#888899]" />
+                  <div className="w-10 h-10 rounded-xl bg-[#6C47FF]/10 flex items-center justify-center">
+                    <Presentation className="w-5 h-5 text-[#6C47FF]" />
                   </div>
-                  <h6 className="font-bold text-[#F0F0F0] text-sm">Pitch Deck</h6>
+                  <div>
+                    <h6 className="font-bold text-[#F0F0F0] text-sm">Pitch Deck</h6>
+                    <p className="text-xs text-[#888899]">Investor presentation</p>
+                  </div>
                 </div>
-                <span className="px-2 py-1 bg-[#6C47FF]/10 text-[#6C47FF] text-[10px] font-bold uppercase tracking-widest rounded-md">
+                <span className="px-3 py-1 bg-[#6C47FF]/10 text-[#6C47FF] text-[10px] font-bold uppercase tracking-widest rounded-lg border border-[#6C47FF]/30">
                   {pitchDeck?.slides?.length ?? 0} Slides
                 </span>
               </div>
-              <div className="flex-1 bg-[#0A0A0F] border border-[#1E1E28] rounded-xl flex flex-col items-center justify-center mb-6 p-6 relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#6C47FF]/10 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
+              <div className="flex-1 bg-gradient-to-br from-[#6C47FF]/10 to-[#00D4AA]/5 border border-[#6C47FF]/30 rounded-xl flex flex-col items-center justify-center mb-6 p-6 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#6C47FF]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <div className="text-lg font-black text-white tracking-widest mb-1 z-10 text-center">{ideaName}</div>
                 <div className="text-[10px] font-bold text-[#888899] uppercase tracking-[0.2em] z-10 text-center">
-                  {pitchDeck?.brand?.tagline ?? 'Pitch Deck'}
+                  {pitchDeck?.brand?.tagline ?? 'Investment Ready'}
                 </div>
               </div>
               <div className="flex gap-3">
                 <button onClick={(e) => { e.stopPropagation(); navigate('pitch'); }}
-                        className="flex-1 py-2.5 bg-transparent border-2 border-[#1E1E28] text-[#888899] font-bold text-xs hover:border-[#00D4AA] hover:text-[#00D4AA] rounded-xl transition-colors flex items-center justify-center gap-2">
-                  <FileText className="w-3 h-3" /> View
+                        className="flex-1 py-2.5 bg-[#0A0A0F] border-2 border-white/[0.06] text-[#888899] font-bold text-xs hover:border-[#6C47FF] hover:text-[#6C47FF] rounded-xl transition-all flex items-center justify-center gap-2">
+                  <FileText className="w-3 h-3" /> Preview
                 </button>
                 <button onClick={(e) => { e.stopPropagation(); handleDownloadPptx(); }} disabled={pptxLoading}
-                        className="flex-1 py-2.5 bg-[#6C47FF]/10 border-2 border-[#6C47FF]/30 text-[#6C47FF] font-bold text-xs hover:bg-[#6C47FF] hover:text-white rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        className="flex-1 py-2.5 bg-[#6C47FF]/10 border-2 border-[#6C47FF]/50 text-[#6C47FF] font-bold text-xs hover:bg-[#6C47FF] hover:text-white hover:border-[#6C47FF] rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                   {pptxLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
-                  {pptxLoading ? 'Generating…' : '.pptx'}
+                  {pptxLoading ? 'Creating…' : '.pptx'}
                 </button>
               </div>
             </div>
 
-            {/* MVP card */}
-            <div className="bg-[#111118] rounded-2xl p-6 flex flex-col cursor-pointer card-hover animate-fadeInUp border-2 border-transparent hover:border-[#6C47FF]/50"
-                 style={{ animationDelay: '300ms' }}
+            {/* MVP card — Purple accent */}
+            <div className="bg-[#111118] rounded-2xl p-6 flex flex-col cursor-pointer transition-all duration-200 hover:border-[#6C47FF]/50 hover:shadow-[0_0_20px_rgba(108,71,255,0.1)] animate-fadeInUp border-2 border-white/[0.06]"
+                 style={{ animationDelay: '400ms', borderLeftWidth: '4px', borderLeftColor: '#6C47FF' }}
                  onClick={() => navigate('mvp')}>
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                  <Cpu className="w-5 h-5 text-[#888899]" />
+                <div className="w-10 h-10 rounded-xl bg-[#6C47FF]/10 flex items-center justify-center">
+                  <Cpu className="w-5 h-5 text-[#6C47FF]" />
                 </div>
-                <h6 className="font-bold text-[#F0F0F0] text-sm">MVP Architecture</h6>
+                <div>
+                  <h6 className="font-bold text-[#F0F0F0] text-sm">MVP Architecture</h6>
+                  <p className="text-xs text-[#888899]">Development roadmap</p>
+                </div>
               </div>
               <div className="flex flex-wrap gap-2 mb-6 flex-1">
                 {(mvp?.recommended_stack ?? []).slice(0, 5).map((item, i) => (
-                  <span key={i} className="px-2 py-1 bg-[#0A0A0F] border border-[#1E1E28] text-[#888899] text-[10px] font-bold uppercase tracking-widest rounded-md">
+                  <span key={i} className="px-2.5 py-1 bg-[#6C47FF]/10 border border-[#6C47FF]/30 text-[#6C47FF] text-[10px] font-bold rounded-lg uppercase tracking-widest">
                     {item.technology?.toString() ?? 'Tech'}
                   </span>
                 ))}
+                {(mvp?.recommended_stack ?? []).length > 5 && (
+                  <span className="px-2.5 py-1 bg-[#6C47FF]/5 border border-[#6C47FF]/20 text-[#888899] text-[10px] font-bold rounded-lg">
+                    +{(mvp?.recommended_stack ?? []).length - 5} more
+                  </span>
+                )}
               </div>
-              <div className="flex flex-col gap-3">
-                <button onClick={(e) => { e.stopPropagation(); navigate('mvp'); }}
-                        className="text-xs font-bold text-[#6C47FF] hover:text-white transition-colors flex items-center gap-1">
-                  View Architecture <ArrowRight className="w-3 h-3" />
-                </button>
-                <button onClick={(e) => { e.stopPropagation(); navigate('mvp'); }}
-                        className="w-full py-2.5 bg-transparent border-2 border-[#1E1E28] text-[#888899] font-bold text-xs hover:border-[#00D4AA] hover:text-[#00D4AA] rounded-xl transition-colors flex items-center justify-center gap-2">
-                  <Download className="w-3 h-3" /> Download Roadmap
-                </button>
+              <div className="text-xs text-[#888899] mb-4 pb-4 border-b border-white/[0.06]">
+                <span className="font-bold text-[#6C47FF]">{mvp?.estimated_weeks ?? '—'}</span> weeks estimated • <span className="font-bold text-[#00D4AA]">{mvp?.team_size ?? '—'}</span> person team
               </div>
+              <button onClick={(e) => { e.stopPropagation(); navigate('mvp'); }}
+                      className="w-full py-2.5 bg-[#6C47FF]/10 border-2 border-[#6C47FF]/50 text-[#6C47FF] font-bold text-xs hover:bg-[#6C47FF] hover:text-white hover:border-[#6C47FF] rounded-xl transition-all flex items-center justify-center gap-2">
+                <Download className="w-3 h-3" /> Download Roadmap
+              </button>
             </div>
 
-            {/* Pivot card — full width */}
-            <div className="md:col-span-2 lg:col-span-3 bg-amber-500/5 border-2 border-amber-500/30 rounded-2xl p-6 cursor-pointer hover:bg-amber-500/10 hover:border-amber-500/50 transition-colors animate-fadeInUp shadow-[0_0_20px_rgba(234,179,8,0.1)] hover:shadow-[0_0_30px_rgba(234,179,8,0.2)]"
-                 style={{ animationDelay: '350ms' }}
+            {/* Pivot card — full width, Yellow/Warning accent */}
+            <div className="md:col-span-2 lg:col-span-3 bg-gradient-to-br from-[#FFB800]/10 to-[#FF6B6B]/5 border-2 border-[#FFB800]/40 rounded-2xl p-6 cursor-pointer hover:border-[#FFB800]/60 hover:shadow-[0_0_20px_rgba(255,184,0,0.15)] transition-all animate-fadeInUp"
+                 style={{ animationDelay: '450ms' }}
                  onClick={() => navigate('pivot')}>
               <div className="flex items-center gap-3 mb-4">
-                <AlertTriangle className="w-6 h-6 text-amber-500" />
-                <h6 className="font-black text-amber-500 text-lg uppercase tracking-wide">Pivot Opportunity Found</h6>
+                <div className="w-10 h-10 rounded-xl bg-[#FFB800]/10 flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 text-[#FFB800]" />
+                </div>
+                <div>
+                  <h6 className="font-black text-[#FFB800] text-lg uppercase tracking-wide">Strategic Pivot Opportunities</h6>
+                  <p className="text-xs text-[#888899]">Alternative market directions identified</p>
+                </div>
               </div>
-              <p className="text-sm text-[#F0F0F0] bg-[#0A0A0F] border border-amber-500/20 p-4 rounded-xl mb-4 leading-relaxed">
-                {(pivots as any[])[0]?.rationale?.toString() ?? 'Pivot options are being generated from the backend run. Adversarial analysis ensures your strategy holds up.'}
+              <p className="text-sm text-[#F0F0F0] bg-[#0A0A0F] border border-[#FFB800]/20 p-4 rounded-xl mb-4 leading-relaxed">
+                {(pivots as any[])[0]?.rationale?.toString() ?? 'Strategic pivot analysis ensures your core thesis is validated. Explore alternative market positions with data backing.'}
               </p>
               <button onClick={(e) => { e.stopPropagation(); navigate('pivot'); }}
-                      className="px-6 py-3 bg-amber-500 text-[#0A0A0F] font-black text-sm hover:bg-amber-400 rounded-xl transition-colors flex items-center gap-2 w-fit">
-                Run Full Pivot Analysis <ArrowRight className="w-4 h-4" />
+                      className="px-6 py-3 bg-[#FFB800] text-[#0A0A0F] font-black text-sm hover:bg-[#FFC933] hover:shadow-[0_0_20px_rgba(255,184,0,0.3)] rounded-xl transition-all flex items-center gap-2 w-fit">
+                Explore Pivots <ArrowRight className="w-4 h-4" />
               </button>
             </div>
 
@@ -460,12 +580,12 @@ export default function ResultsDashboard() {
 
           {/* ── Sidebar ── */}
           <div className="xl:col-span-1">
-            <div className="bg-[#111118] rounded-2xl p-6 sticky top-24 border-2 border-[#1E1E28] animate-fadeInLeft" style={{ animationDelay: '400ms' }}>
+            <div className="bg-[#111118] rounded-2xl p-6 sticky top-24 border border-white/[0.06] animate-fadeInLeft" style={{ animationDelay: '500ms' }}>
               {/* Publish to Community */}
               <button
                 onClick={handlePublishToCommunity}
                 disabled={publishLoading || published}
-                className="w-full mb-6 px-5 py-2.5 bg-[#6C47FF] border-2 border-[#6C47FF] text-white font-bold text-sm hover:bg-[#111118] hover:text-[#6C47FF] shadow-[4px_4px_0px_#00D4AA] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full mb-6 px-5 py-3 bg-[#6C47FF] border-2 border-[#6C47FF] text-white font-bold text-sm hover:bg-[#5a3ae0] hover:shadow-[0_0_20px_rgba(108,71,255,0.3)] shadow-[0_4px_12px_rgba(108,71,255,0.2)] transition-all flex items-center justify-center gap-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {publishLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -475,51 +595,54 @@ export default function ResultsDashboard() {
                 {published ? 'Published!' : publishLoading ? 'Publishing…' : 'Publish to Community'}
               </button>
 
-              <h6 className="font-black text-white text-base mb-6 tracking-wide">Share this package</h6>
-              <div className="flex flex-col gap-3">
+              <h6 className="font-black text-white text-sm mb-4 tracking-wide uppercase">Share & Export</h6>
+              <div className="flex flex-col gap-2 mb-6">
                 {[
-                  { icon: LinkIcon, label: 'Copy Link', action: handleCopyLink },
-                  { icon: Mail, label: 'Email Investor', action: () => navigate('landing') },
-                  { icon: Globe, label: 'Push to Drive', action: handleDrivePush },
-                  { icon: FileArchive, label: pdfLoading ? 'Generating PDF…' : 'Export PDF', action: handleExportPdf, loading: pdfLoading },
-                ].map(({ icon: Icon, label, action, loading }) => (
+                  { icon: LinkIcon, label: 'Copy Link', action: handleCopyLink, color: '#6C47FF', loading: false },
+                  { icon: Mail, label: 'Email Investor', action: () => navigate('landing'), color: '#00D4AA', loading: false },
+                  { icon: Globe, label: 'Push to Drive', action: handleDrivePush, color: '#FFB800', loading: false },
+                ].map(({ icon: Icon, label, action, loading, color }) => (
                   <button key={label} onClick={action} disabled={loading}
-                          className="w-full py-3 px-4 bg-[#0A0A0F] border border-[#1E1E28] hover:border-[#6C47FF]/50 text-[#888899] hover:text-white text-sm font-bold rounded-xl transition-colors flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group">
+                          className="w-full py-2.5 px-3 bg-[#0A0A0F] border border-white/[0.06] hover:border-white/[0.12] text-[#888899] hover:text-white text-xs font-bold rounded-lg transition-all flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed group"
+                          style={{
+                            borderLeftWidth: '2px',
+                            borderLeftColor: color
+                          }}>
                     {loading
-                      ? <Loader2 className="w-4 h-4 animate-spin text-[#6C47FF]" />
-                      : <Icon className="w-4 h-4 group-hover:text-[#6C47FF] transition-colors" />}
-                    {label}
+                      ? <Loader2 className="w-4 h-4 animate-spin" style={{ color }}/>
+                      : <Icon className="w-4 h-4 transition-colors" style={{ color }} />}
+                    <span className="flex-1 text-left">{label}</span>
+                    <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </button>
                 ))}
               </div>
 
               {/* Progress */}
-              <div className="mt-8 pt-8 border-t border-[#1E1E28]">
+              <div className="pt-6 border-t border-white/[0.06]">
                 <div className="flex justify-between items-center mb-3">
-                  <span className="text-xs font-bold text-[#888899] uppercase tracking-widest">Completion</span>
+                  <span className="text-xs font-bold text-[#888899] uppercase tracking-widest">Analysis Complete</span>
                   <span className="text-xs font-black text-[#00D4AA]">{progressPercent}%</span>
                 </div>
-                <div className="w-full h-2 bg-[#0A0A0F] rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-[#6C47FF] to-[#00D4AA] rounded-full progress-animated"
+                <div className="w-full h-2.5 bg-[#0A0A0F] rounded-full overflow-hidden border border-white/[0.06]">
+                  <div className="h-full bg-gradient-to-r from-[#6C47FF] via-[#00D4AA] to-[#00D4AA] rounded-full progress-animated"
                        style={{ width: `${progressPercent}%` }} />
                 </div>
               </div>
 
-              {/* Quick tips */}
-              <div className="mt-8 bg-[#0A0A0F] border border-[#1E1E28] rounded-xl overflow-hidden group">
-                <div className="p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors">
-                  <div className="text-xs font-bold text-[#888899] uppercase tracking-widest flex items-center gap-2">
-                    <span className="text-lg leading-none">💡</span> Next Steps
-                  </div>
+              {/* Status Badges */}
+              <div className="mt-6 flex flex-wrap gap-2">
+                <div className="px-3 py-1.5 bg-[#00D4AA]/10 border border-[#00D4AA]/30 text-[#00D4AA] text-[10px] font-bold rounded-lg uppercase tracking-widest flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3 h-3" /> Complete
                 </div>
-                <div className="px-4 pb-4 border-t border-white/5 pt-3">
-                  <ul className="text-xs font-medium text-[#888899] flex flex-col gap-2 pl-4 list-disc marker:text-[#6C47FF]">
-                    <li>Export PDF for investor meetings</li>
-                    <li>Download .pptx pitch deck</li>
-                    <li>Review legal compliance items</li>
-                    <li>Run pivot simulation if needed</li>
-                  </ul>
+                <div className="px-3 py-1.5 bg-[#6C47FF]/10 border border-[#6C47FF]/30 text-[#6C47FF] text-[10px] font-bold rounded-lg uppercase tracking-widest flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3 h-3" /> Verified
                 </div>
+              </div>
+
+              {/* Trust Signal */}
+              <div className="mt-6 p-4 bg-[#0A0A0F] border border-white/[0.06] rounded-xl">
+                <div className="text-xs font-bold text-[#888899] uppercase tracking-widest mb-2">Powered by</div>
+                <div className="text-xs text-[#E0E0EE] font-medium">Enterprise-grade AI analysis with Tavily market research integration</div>
               </div>
             </div>
           </div>

@@ -78,3 +78,15 @@ class InterestRecord:
     message: str | None
     created_at: datetime
 
+
+@dataclass
+class NotificationRecord:
+    id: str
+    user_id: str
+    actor_id: str
+    type: str  # 'upvote', 'comment', 'interest'
+    idea_id: str
+    message: str
+    is_read: bool
+    created_at: datetime
+

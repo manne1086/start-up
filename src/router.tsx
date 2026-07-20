@@ -14,6 +14,7 @@ export type Screen =
   | 'legal'
   | 'pitch'
   | 'mvp'
+  | 'how-it-works'
   | 'settings'
   | 'error'
   | 'components';
@@ -35,6 +36,7 @@ export const SCREEN_TO_PATH: Record<Screen, string> = {
   legal: '/legal',
   pitch: '/pitch',
   mvp: '/mvp',
+  'how-it-works': '/how-it-works',
   settings: '/settings',
   error: '/error',
   components: '/components',

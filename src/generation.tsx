@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 const STORAGE_KEY = 'ventureforge:generation';
+const STALE_THRESHOLD_MS = 30_000;
+const MAX_RECENT_RUNS = 10;
 
 type RunStatus = 'idle' | 'running' | 'paused' | 'complete' | 'failed';
 
@@ -33,6 +35,29 @@ type GenerationState = {
   [key: string]: unknown;
 };
 
+type RunEntry = {
+  idea: string;
+  startup_name: string;
+  status: RunStatus;
+  backendState: GenerationState | null;
+  lastVisited: number;
+  createdAt: number;
+};
+
+type StoredGenerationMap = {
+  runs: Record<string, RunEntry>;
+  activeThreadId: string | null;
+  recentOrder: string[];
+};
+
+export type RecentRun = {
+  threadId: string;
+  idea: string;
+  startup_name: string;
+  status: RunStatus;
+  lastVisited: number;
+};
+
 type GenerationContextType = {
   threadId: string | null;
   idea: string;
@@ -44,6 +69,8 @@ type GenerationContextType = {
   patchRun: (patch: Record<string, unknown>) => Promise<GenerationState | null>;
   updatePitchDeck: (updater: (deck: Record<string, unknown>) => Record<string, unknown>) => void;
   clearRun: () => void;
+  switchToRun: (threadId: string) => Promise<void>;
+  getRecentRuns: () => RecentRun[];
 };
 
 const GenerationContext = createContext<GenerationContextType>({
@@ -57,54 +84,82 @@ const GenerationContext = createContext<GenerationContextType>({
   patchRun: async () => null,
   updatePitchDeck: () => {},
   clearRun: () => {},
+  switchToRun: async () => {},
+  getRecentRuns: () => [],
 });
 
-type StoredGeneration = {
-  threadId: string | null;
-  idea: string;
-  status: RunStatus;
-  backendState: GenerationState | null;
-};
+function parseRunStatus(s: unknown): RunStatus {
+  if (s === 'running' || s === 'paused' || s === 'complete' || s === 'failed') return s;
+  return 'idle';
+}
 
-function getStoredGeneration(): StoredGeneration {
-  if (typeof window === 'undefined') {
-    return { threadId: null, idea: '', status: 'idle', backendState: null };
-  }
-
+function loadStoredMap(): StoredGenerationMap {
+  const empty: StoredGenerationMap = { runs: {}, activeThreadId: null, recentOrder: [] };
+  if (typeof window === 'undefined') return empty;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return { threadId: null, idea: '', status: 'idle', backendState: null };
+    if (!raw) return empty;
+    const parsed = JSON.parse(raw);
+
+    if (parsed.runs && typeof parsed.runs === 'object') {
+      return {
+        runs: parsed.runs as Record<string, RunEntry>,
+        activeThreadId: typeof parsed.activeThreadId === 'string' ? parsed.activeThreadId : null,
+        recentOrder: Array.isArray(parsed.recentOrder)
+          ? (parsed.recentOrder as string[]).slice(0, MAX_RECENT_RUNS)
+          : [],
+      };
     }
 
-    const parsed = JSON.parse(raw) as Partial<StoredGeneration>;
-    return {
-      threadId: typeof parsed.threadId === 'string' ? parsed.threadId : null,
-      idea: typeof parsed.idea === 'string' ? parsed.idea : '',
-      status: parsed.status === 'running' || parsed.status === 'paused' || parsed.status === 'complete' || parsed.status === 'failed'
-        ? parsed.status
-        : 'idle',
-      backendState: parsed.backendState ?? null,
-    };
+    // Migrate old flat format: { threadId, idea, status, backendState }
+    if (typeof parsed.threadId === 'string' && parsed.threadId) {
+      const now = Date.now();
+      const entry: RunEntry = {
+        idea: typeof parsed.idea === 'string' ? parsed.idea : '',
+        startup_name: (parsed.backendState?.startup_name as string) ?? '',
+        status: parseRunStatus(parsed.status),
+        backendState: parsed.backendState ?? null,
+        lastVisited: now,
+        createdAt: now,
+      };
+      return {
+        runs: { [parsed.threadId]: entry },
+        activeThreadId: parsed.threadId,
+        recentOrder: [parsed.threadId],
+      };
+    }
+
+    return empty;
   } catch {
-    return { threadId: null, idea: '', status: 'idle', backendState: null };
+    return empty;
   }
 }
 
-function persistGeneration(next: StoredGeneration) {
+function persistMap(map: StoredGenerationMap) {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
   } catch {
-    // Quota exceeded (large AI payloads) — fall back to storing only the
-    // thread pointer so the startup effect can refetch full state from the backend.
     try {
-      window.localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ threadId: next.threadId, idea: next.idea, status: next.status, backendState: null }),
-      );
+      const slim: StoredGenerationMap = {
+        ...map,
+        runs: Object.fromEntries(
+          Object.entries(map.runs).map(([id, entry]) => [
+            id,
+            id === map.activeThreadId ? entry : { ...entry, backendState: null },
+          ]),
+        ),
+      };
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(slim));
     } catch {
-      // Storage completely unavailable; state only lives in React memory.
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          ...map,
+          runs: Object.fromEntries(
+            Object.entries(map.runs).map(([id, entry]) => [id, { ...entry, backendState: null }]),
+          ),
+        }));
+      } catch { /* storage completely unavailable */ }
     }
   }
 }
@@ -124,12 +179,21 @@ function normalizeState(data: GenerationState | null, threadId: string | null, i
 }
 
 export function GenerationProvider({ children }: { children: React.ReactNode }) {
-  const stored = getStoredGeneration();
-  const [threadId, setThreadId] = useState<string | null>(stored.threadId);
-  const [idea, setIdea] = useState(stored.idea);
-  const [status, setStatus] = useState<RunStatus>(stored.status);
-  const [backendState, setBackendState] = useState<GenerationState | null>(normalizeState(stored.backendState, stored.threadId, stored.idea, stored.status));
-  const [error, setError] = useState<string | null>(stored.backendState?.error ?? null);
+  const mapRef = useRef<StoredGenerationMap>(loadStoredMap());
+  const initialMap = mapRef.current;
+  const initialEntry = initialMap.activeThreadId
+    ? initialMap.runs[initialMap.activeThreadId] ?? null
+    : null;
+
+  const [threadId, setThreadId] = useState<string | null>(initialMap.activeThreadId);
+  const [idea, setIdea] = useState(initialEntry?.idea ?? '');
+  const [status, setStatus] = useState<RunStatus>(initialEntry?.status ?? 'idle');
+  const [backendState, setBackendState] = useState<GenerationState | null>(
+    initialEntry
+      ? normalizeState(initialEntry.backendState, initialMap.activeThreadId, initialEntry.idea, initialEntry.status)
+      : null,
+  );
+  const [error, setError] = useState<string | null>(initialEntry?.backendState?.error ?? null);
   const streamRef = useRef<EventSource | null>(null);
 
   const closeStream = () => {
@@ -139,13 +203,26 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
     }
   };
 
-  const syncStored = (nextThreadId: string | null, nextIdea: string, nextStatus: RunStatus, nextState: GenerationState | null) => {
-    persistGeneration({
-      threadId: nextThreadId,
-      idea: nextIdea,
-      status: nextStatus,
-      backendState: nextState,
-    });
+  const syncToMap = (tid: string | null, nextIdea: string, nextStatus: RunStatus, nextState: GenerationState | null) => {
+    const map = mapRef.current;
+    if (tid) {
+      const existing = map.runs[tid];
+      map.runs[tid] = {
+        idea: nextIdea,
+        startup_name: (nextState?.startup_name as string) ?? existing?.startup_name ?? '',
+        status: nextStatus,
+        backendState: nextState,
+        lastVisited: Date.now(),
+        createdAt: existing?.createdAt ?? Date.now(),
+      };
+      map.activeThreadId = tid;
+    }
+    persistMap(map);
+  };
+
+  const touchRecentOrder = (tid: string) => {
+    const map = mapRef.current;
+    map.recentOrder = [tid, ...map.recentOrder.filter(id => id !== tid)].slice(0, MAX_RECENT_RUNS);
   };
 
   const applyState = (nextState: GenerationState | null) => {
@@ -153,7 +230,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
     setBackendState(normalized);
     setStatus((normalized?.status as RunStatus | undefined) ?? status);
     setError(normalized?.error ?? null);
-    syncStored(threadId, idea, (normalized?.status as RunStatus | undefined) ?? status, normalized);
+    syncToMap(threadId, idea, (normalized?.status as RunStatus | undefined) ?? status, normalized);
     return normalized;
   };
 
@@ -167,7 +244,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       setBackendState(nextState);
       setStatus((nextState?.status as RunStatus | undefined) ?? status);
       setError(nextState?.error ?? null);
-      syncStored(nextThreadId, data.state?.idea ?? idea, (nextState?.status as RunStatus | undefined) ?? status, nextState);
+      syncToMap(nextThreadId, data.state?.idea ?? idea, (nextState?.status as RunStatus | undefined) ?? status, nextState);
       return nextState;
     }
     return null;
@@ -184,7 +261,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       setStatus(nextStatus);
       setBackendState((current) => {
         const next = normalizeState({ ...(current ?? {}), status: nextStatus }, nextThreadId, idea, nextStatus);
-        syncStored(nextThreadId, idea, nextStatus, next);
+        syncToMap(nextThreadId, idea, nextStatus, next);
         return next;
       });
     });
@@ -195,7 +272,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
         const nextLogs = [...((current?.agent_logs ?? []) as NonNullable<GenerationState['agent_logs']>)];
         nextLogs.push(log);
         const next = normalizeState({ ...(current ?? {}), agent_logs: nextLogs }, nextThreadId, idea, status);
-        syncStored(nextThreadId, idea, status, next);
+        syncToMap(nextThreadId, idea, status, next);
         return next;
       });
     });
@@ -204,7 +281,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       const payload = JSON.parse((event as MessageEvent).data) as { node?: string; status?: string };
       setBackendState((current) => {
         const next = normalizeState({ ...(current ?? {}), current_step: payload.node, current_step_status: payload.status }, nextThreadId, idea, 'running');
-        syncStored(nextThreadId, idea, 'running', next);
+        syncToMap(nextThreadId, idea, 'running', next);
         return next;
       });
     });
@@ -215,7 +292,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       setBackendState(nextState);
       setStatus('paused');
       setError(nextState?.error ?? null);
-      syncStored(nextThreadId, idea, 'paused', nextState);
+      syncToMap(nextThreadId, idea, 'paused', nextState);
     });
 
     source.addEventListener('complete', (event) => {
@@ -224,7 +301,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       setBackendState(nextState);
       setStatus('complete');
       setError(nextState?.error ?? null);
-      syncStored(nextThreadId, idea, 'complete', nextState);
+      syncToMap(nextThreadId, idea, 'complete', nextState);
       closeStream();
     });
 
@@ -234,7 +311,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
       setError(message);
       setBackendState((current) => {
         const next = normalizeState({ ...(current ?? {}), status: 'failed', error: message }, nextThreadId, idea, 'failed');
-        syncStored(nextThreadId, idea, 'failed', next);
+        syncToMap(nextThreadId, idea, 'failed', next);
         return next;
       });
       closeStream();
@@ -280,7 +357,11 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
     setBackendState(nextState);
     setStatus((nextState?.status as RunStatus | undefined) ?? 'running');
     setError(nextState?.error ?? null);
-    syncStored(nextThreadId, cleanedIdea, (nextState?.status as RunStatus | undefined) ?? 'running', nextState);
+
+    if (nextThreadId) {
+      touchRecentOrder(nextThreadId);
+    }
+    syncToMap(nextThreadId, cleanedIdea, (nextState?.status as RunStatus | undefined) ?? 'running', nextState);
 
     if (nextThreadId) {
       attachStream(nextThreadId);
@@ -331,29 +412,73 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
     return applyState(data.state ?? null);
   };
 
-  // Applies a local edit to the pitch deck (editor changes) without a round trip
-  // to the backend, so PDF/PPTX export and any other reader of `backendState`
-  // immediately reflect the edit. Persisted via the syncStored effect below.
   const updatePitchDeck = (updater: (deck: Record<string, unknown>) => Record<string, unknown>) => {
     setBackendState((current) => {
       const currentDeck = (current?.pitch_deck as Record<string, unknown>) ?? {};
       const nextDeck = updater(currentDeck);
       const next = normalizeState({ ...(current ?? {}), pitch_deck: nextDeck }, threadId, idea, status);
-      syncStored(threadId, idea, status, next);
+      syncToMap(threadId, idea, status, next);
       return next;
     });
   };
 
   const clearRun = () => {
     closeStream();
+    mapRef.current.activeThreadId = null;
+    persistMap(mapRef.current);
     setThreadId(null);
     setIdea('');
     setStatus('idle');
     setBackendState(null);
     setError(null);
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem(STORAGE_KEY);
+  };
+
+  const switchToRun = async (targetThreadId: string) => {
+    const map = mapRef.current;
+    const entry = map.runs[targetThreadId];
+    if (!entry) throw new Error(`Run ${targetThreadId} not found`);
+
+    closeStream();
+
+    const isStale = !entry.backendState ||
+      (entry.status === 'running' && Date.now() - entry.lastVisited > STALE_THRESHOLD_MS);
+
+    setThreadId(targetThreadId);
+    setIdea(entry.idea);
+    setStatus(entry.status);
+    setBackendState(normalizeState(entry.backendState, targetThreadId, entry.idea, entry.status));
+    setError(entry.backendState?.error ?? null);
+
+    entry.lastVisited = Date.now();
+    map.activeThreadId = targetThreadId;
+    touchRecentOrder(targetThreadId);
+    persistMap(map);
+
+    let currentStatus = entry.status;
+    if (isStale) {
+      const snapshot = await fetchSnapshot(targetThreadId);
+      currentStatus = (snapshot?.status as RunStatus | undefined) ?? entry.status;
     }
+
+    if (currentStatus !== 'complete' && currentStatus !== 'failed' && currentStatus !== 'idle') {
+      attachStream(targetThreadId);
+    }
+  };
+
+  const getRecentRuns = (): RecentRun[] => {
+    const map = mapRef.current;
+    return map.recentOrder
+      .filter(id => id in map.runs)
+      .map(id => {
+        const entry = map.runs[id];
+        return {
+          threadId: id,
+          idea: entry.idea,
+          startup_name: entry.startup_name,
+          status: entry.status,
+          lastVisited: entry.lastVisited,
+        };
+      });
   };
 
   useEffect(() => {
@@ -378,7 +503,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   useEffect(() => {
-    syncStored(threadId, idea, status, backendState);
+    syncToMap(threadId, idea, status, backendState);
   }, [backendState, idea, status, threadId]);
 
   useEffect(() => () => closeStream(), []);
@@ -396,6 +521,8 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
         patchRun,
         updatePitchDeck,
         clearRun,
+        switchToRun,
+        getRecentRuns,
       }}
     >
       {children}

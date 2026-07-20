@@ -148,6 +148,21 @@ async def _init_idea_board_schema(conn: Any) -> None:
         """
     )
 
+    await conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS notifications (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            actor_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            type TEXT NOT NULL CHECK (type IN ('upvote', 'comment', 'interest')),
+            idea_id UUID NOT NULL REFERENCES ideas(id) ON DELETE CASCADE,
+            message TEXT NOT NULL,
+            is_read BOOLEAN NOT NULL DEFAULT FALSE,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+        """
+    )
+
     # Indexes to support the common board queries (list by idea, by owner).
     await conn.execute("CREATE INDEX IF NOT EXISTS idx_ideas_owner_id ON ideas(owner_id)")
     await conn.execute("CREATE INDEX IF NOT EXISTS idx_ideas_is_public ON ideas(is_public)")
@@ -156,6 +171,8 @@ async def _init_idea_board_schema(conn: Any) -> None:
     await conn.execute("CREATE INDEX IF NOT EXISTS idx_comments_parent ON comments(parent_comment_id)")
     await conn.execute("CREATE INDEX IF NOT EXISTS idx_reactions_idea_id ON reactions(idea_id)")
     await conn.execute("CREATE INDEX IF NOT EXISTS idx_interests_idea_id ON interests(idea_id)")
+    await conn.execute("CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id)")
+    await conn.execute("CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(user_id, is_read, created_at)")
 
 
 def _slugify_username(name: str | None) -> str:

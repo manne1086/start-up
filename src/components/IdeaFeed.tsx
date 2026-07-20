@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowBigUp, MessageSquare, Users, CheckCircle2, Clock, ArrowRight } from 'lucide-react';
+import { ArrowBigUp, MessageSquare, Users, CheckCircle2, Clock, ArrowRight, Shield, Trash2 } from 'lucide-react';
+import { useAuth } from '../auth';
 import GlobalNavbar from './GlobalNavbar';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
@@ -41,11 +42,45 @@ function relativeTime(iso: string): string {
   return `${Math.floor(months / 12)}y ago`;
 }
 
+function UserAvatar({ picture, name, size = 32 }: { picture: string | null; name: string | null; size?: number }) {
+  const initials = name
+    ?.split(' ')
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase() || '?';
+
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        backgroundImage: picture ? `url('${picture}')` : undefined,
+      }}
+      className="rounded-full bg-cover bg-center border-2 border-transparent group-hover:border-[#6C47FF] transition-all duration-200"
+      title={name || 'User'}
+    >
+      {!picture && (
+        <div
+          className="w-full h-full rounded-full flex items-center justify-center text-xs font-bold bg-gradient-to-br from-[#6C47FF] to-[#00D4AA] text-white"
+          style={{ fontSize: size / 2.5 }}
+        >
+          {initials}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SkeletonCard() {
   return (
-    <div className="border-2 border-[#111118] bg-[#111118] p-6 flex flex-col animate-pulse">
-      <div className="flex justify-between items-start mb-4">
-        <div className="h-6 w-3/4 bg-[#0A0A0F] rounded animate-shimmer" />
+    <div className="border border-white/[0.06] bg-[#111118] hover:bg-[#1A1A22] p-6 flex flex-col animate-pulse transition-colors rounded-lg">
+      <div className="flex items-start gap-4 mb-4">
+        <div className="h-8 w-8 bg-[#0A0A0F] rounded-full animate-shimmer" />
+        <div className="flex-1">
+          <div className="h-6 w-3/4 bg-[#0A0A0F] rounded animate-shimmer mb-2" />
+          <div className="h-4 w-1/2 bg-[#0A0A0F] rounded animate-shimmer" />
+        </div>
       </div>
       <div className="h-4 w-full bg-[#0A0A0F] rounded mb-2 animate-shimmer" />
       <div className="h-4 w-2/3 bg-[#0A0A0F] rounded mb-4 animate-shimmer" />
@@ -53,13 +88,12 @@ function SkeletonCard() {
         <div className="h-5 w-16 bg-[#0A0A0F] rounded animate-shimmer" />
         <div className="h-5 w-12 bg-[#0A0A0F] rounded animate-shimmer" />
       </div>
-      <div className="mt-auto pt-4 border-t border-[#0A0A0F]">
+      <div className="mt-auto pt-4 border-t border-white/[0.06]">
         <div className="flex items-center gap-4">
           <div className="h-4 w-10 bg-[#0A0A0F] rounded animate-shimmer" />
           <div className="h-4 w-10 bg-[#0A0A0F] rounded animate-shimmer" />
           <div className="h-4 w-10 bg-[#0A0A0F] rounded animate-shimmer" />
         </div>
-        <div className="h-3 w-1/2 bg-[#0A0A0F] rounded mt-3 animate-shimmer" />
       </div>
     </div>
   );
@@ -67,6 +101,7 @@ function SkeletonCard() {
 
 export default function IdeaFeed({ onOpenIdea }: { onOpenIdea?: (id: string) => void }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -74,6 +109,7 @@ export default function IdeaFeed({ onOpenIdea }: { onOpenIdea?: (id: string) => 
   const [selectedDomain, setSelectedDomain] = useState<string>('All');
   const [sort, setSort] = useState<SortKey>('top');
   const [hasMore, setHasMore] = useState(true);
+  const [deletingIdeaId, setDeletingIdeaId] = useState<string | null>(null);
   const offsetRef = useRef(0);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -117,6 +153,25 @@ export default function IdeaFeed({ onOpenIdea }: { onOpenIdea?: (id: string) => 
     }
   }, [sort, selectedDomain]);
 
+  const handleDeleteIdea = async (e: React.MouseEvent, ideaId: string, ideaTitle: string) => {
+    e.stopPropagation();
+    if (!window.confirm(`Delete "${ideaTitle}"? This cannot be undone.`)) return;
+
+    setDeletingIdeaId(ideaId);
+    try {
+      const res = await fetch(`${API_URL}/api/ideas/${ideaId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error(`Failed to delete idea (${res.status})`);
+      setIdeas((prev) => prev.filter((idea) => idea.id !== ideaId));
+    } catch (err: any) {
+      setError(err?.message ?? 'Failed to delete idea.');
+    } finally {
+      setDeletingIdeaId(null);
+    }
+  };
+
   useEffect(() => {
     fetchIdeas(true);
   }, [fetchIdeas]);
@@ -148,22 +203,22 @@ export default function IdeaFeed({ onOpenIdea }: { onOpenIdea?: (id: string) => 
   }, [ideas]);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-[#F0F0F0] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#07070C] text-[#F0F0F0] flex flex-col font-sans">
       <GlobalNavbar />
 
       <main className="flex-1 w-full max-w-[1400px] mx-auto px-6 py-10">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
-          <h1 className="text-3xl font-black text-white tracking-tight">Community Ideas</h1>
+          <h1 className="text-4xl font-black text-white tracking-tight">Community Ideas</h1>
         </div>
 
         {/* Filters */}
-        <div className="flex items-center justify-between gap-4 border-b border-[#111118] mb-8 flex-wrap pb-0">
+        <div className="flex items-center justify-between gap-4 border-b border-white/[0.06] mb-8 flex-wrap pb-4">
           {/* Sort tabs */}
           <div className="flex items-center gap-6">
             <button
               onClick={() => setSort('top')}
-              className={`pb-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${
+              className={`pb-2 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${
                 sort === 'top' ? 'border-[#6C47FF] text-white' : 'border-transparent text-[#888899] hover:text-white'
               }`}
             >
@@ -171,7 +226,7 @@ export default function IdeaFeed({ onOpenIdea }: { onOpenIdea?: (id: string) => 
             </button>
             <button
               onClick={() => setSort('newest')}
-              className={`pb-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${
+              className={`pb-2 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${
                 sort === 'newest' ? 'border-[#6C47FF] text-white' : 'border-transparent text-[#888899] hover:text-white'
               }`}
             >
@@ -180,11 +235,11 @@ export default function IdeaFeed({ onOpenIdea }: { onOpenIdea?: (id: string) => 
           </div>
 
           {/* Domain filter dropdown */}
-          <div className="flex items-center gap-3 pb-3">
+          <div className="flex items-center gap-3 pb-2">
             <select
               value={selectedDomain}
               onChange={(e) => setSelectedDomain(e.target.value)}
-              className="bg-[#111118] border-2 border-[#111118] text-[#F0F0F0] px-4 py-2 text-sm font-bold focus:outline-none focus:border-[#6C47FF] transition-colors cursor-pointer"
+              className="bg-[#111118] border border-white/[0.08] text-[#F0F0F0] px-4 py-2 text-sm font-bold focus:outline-none focus:border-[#6C47FF] transition-colors cursor-pointer rounded-lg"
             >
               <option value="All">All Domains</option>
               {domains.map((d) => (
@@ -195,8 +250,8 @@ export default function IdeaFeed({ onOpenIdea }: { onOpenIdea?: (id: string) => 
         </div>
 
         {error && (
-          <div className="mb-6 border-2 border-[#FF4D4F]/30 bg-[#FF4D4F]/10 text-[#FF4D4F] px-5 py-3 text-sm font-bold flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-[#FF4D4F] animate-pulse shrink-0" />
+          <div className="mb-6 border border-[#FF6B6B]/30 bg-[#FF6B6B]/10 text-[#FF6B6B] px-5 py-3 text-sm font-bold flex items-center gap-3 rounded-lg">
+            <div className="w-2 h-2 rounded-full bg-[#FF6B6B] animate-pulse shrink-0" />
             {error}
           </div>
         )}
@@ -213,7 +268,7 @@ export default function IdeaFeed({ onOpenIdea }: { onOpenIdea?: (id: string) => 
           </div>
         ) : ideas.length === 0 && !error ? (
           /* Empty state */
-          <div className="border-2 border-[#111118] bg-[#111118] p-8 text-center">
+          <div className="border border-white/[0.06] bg-[#111118] p-8 text-center rounded-lg">
             <p className="text-[#888899] font-bold text-sm">
               {selectedDomain !== 'All'
                 ? `No ideas yet in ${selectedDomain} — be the first to publish one.`
@@ -227,13 +282,34 @@ export default function IdeaFeed({ onOpenIdea }: { onOpenIdea?: (id: string) => 
                 <div
                   key={idea.id}
                   onClick={() => onOpenIdea?.(idea.id)}
-                  className="border-2 border-[#111118] bg-[#111118] p-6 hover:border-[#6C47FF] hover:shadow-[4px_4px_0px_#6C47FF] transition-all flex flex-col group cursor-pointer"
+                  className="group border border-white/[0.06] bg-[#111118] hover:bg-[#1A1A22] hover:border-white/[0.12] p-6 flex flex-col cursor-pointer transition-all duration-200 rounded-lg hover:shadow-[0_0_20px_rgba(108,71,255,0.15)]"
                 >
-                  {/* Title */}
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-xl font-black text-white line-clamp-2 leading-tight">{idea.title}</h3>
+                  {/* Creator Info */}
+                  <div className="flex items-start gap-3 mb-4">
+                    <UserAvatar picture={idea.owner?.picture} name={idea.owner?.name} size={32} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (idea.owner?.username) navigate(`/users/${idea.owner.username}`);
+                          }}
+                          className="font-bold text-[#F0F0F0] hover:text-[#00D4AA] transition-colors truncate text-sm"
+                        >
+                          {idea.owner?.name || idea.owner?.username || 'Anonymous'}
+                        </button>
+                        <Shield className="w-4 h-4 text-[#00D4AA] shrink-0" />
+                      </div>
+                      <span className="text-xs text-[#555566]">{relativeTime(idea.created_at)}</span>
+                    </div>
                   </div>
 
+                  {/* Title */}
+                  <h3 className="text-lg font-black text-white line-clamp-2 leading-tight mb-3 group-hover:text-[#00D4AA] transition-colors">
+                    {idea.title}
+                  </h3>
+
+                  {/* One-liner */}
                   {idea.one_liner && (
                     <p className="text-sm text-[#888899] leading-relaxed line-clamp-2 mb-4">{idea.one_liner}</p>
                   )}
@@ -241,59 +317,63 @@ export default function IdeaFeed({ onOpenIdea }: { onOpenIdea?: (id: string) => 
                   {/* Badges */}
                   <div className="flex items-center gap-2 mb-6 flex-wrap">
                     {idea.domain && (
-                      <span className="px-2 py-1 border border-[#6C47FF]/30 bg-[#6C47FF]/10 text-[#6C47FF] text-xs font-bold uppercase">
+                      <span className="px-3 py-1.5 border border-[#6C47FF]/30 bg-[#6C47FF]/10 text-[#6C47FF] text-xs font-bold rounded-md">
                         {idea.domain}
                       </span>
                     )}
                     {idea.ai_validation_score != null ? (
-                      <span className={`px-2 py-1 text-xs font-bold uppercase border flex items-center gap-1 ${
+                      <span className={`px-3 py-1.5 text-xs font-bold rounded-md border flex items-center gap-1 ${
                         idea.ai_validation_score >= 70
                           ? 'border-[#00D4AA]/30 bg-[#00D4AA]/10 text-[#00D4AA]'
                           : idea.ai_validation_score >= 40
                           ? 'border-amber-500/30 bg-amber-500/10 text-amber-500'
-                          : 'border-[#FF4D4F]/30 bg-[#FF4D4F]/10 text-[#FF4D4F]'
+                          : 'border-[#FF6B6B]/30 bg-[#FF6B6B]/10 text-[#FF6B6B]'
                       }`}>
                         <CheckCircle2 className="w-3 h-3" />
                         {Math.round(idea.ai_validation_score)}
                       </span>
                     ) : (
-                      <span className="px-2 py-1 text-xs font-bold uppercase border border-[#888899]/30 bg-[#888899]/10 text-[#888899]">
+                      <span className="px-3 py-1.5 text-xs font-bold rounded-md border border-[#888899]/30 bg-[#888899]/10 text-[#888899]">
                         Unvalidated
                       </span>
                     )}
                   </div>
 
-                  {/* Footer */}
-                  <div className="mt-auto pt-4 border-t border-[#0A0A0F]">
-                    <div className="flex items-center gap-4 text-xs font-medium text-[#888899]">
-                      <span className="flex items-center gap-1" title="Upvotes">
-                        <ArrowBigUp className="w-3.5 h-3.5" /> {idea.reaction_counts.upvote}
+                  {/* Footer - Engagement metrics */}
+                  <div className="mt-auto pt-4 border-t border-white/[0.06]">
+                    <div className="flex items-center gap-4 text-xs font-medium text-[#888899] mb-3">
+                      <span className="flex items-center gap-1.5 hover:text-[#6C47FF] transition-colors" title="Upvotes">
+                        <ArrowBigUp className="w-4 h-4" />
+                        <span>{idea.reaction_counts.upvote}</span>
                       </span>
-                      <span className="flex items-center gap-1" title="Comments">
-                        <MessageSquare className="w-3.5 h-3.5" /> {idea.comment_count}
+                      <span className="flex items-center gap-1.5 hover:text-[#00D4AA] transition-colors" title="Comments">
+                        <MessageSquare className="w-4 h-4" />
+                        <span>{idea.comment_count}</span>
                       </span>
-                      <span className="flex items-center gap-1" title="Interested">
-                        <Users className="w-3.5 h-3.5" /> {idea.interest_count}
+                      <span className="flex items-center gap-1.5 hover:text-[#6C47FF] transition-colors" title="Interested">
+                        <Users className="w-4 h-4" />
+                        <span>{idea.interest_count}</span>
                       </span>
                     </div>
-                    <div className="flex items-center justify-between mt-3">
-                      <span className="text-xs text-[#888899] font-medium">
-                        by{' '}
-                        {idea.owner?.username ? (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-[#555566]">
+                        {idea.reaction_counts.upvote} people interested
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {user?.username === idea.owner?.username && (
                           <button
-                            onClick={(e) => { e.stopPropagation(); navigate(`/users/${idea.owner.username}`); }}
-                            className="font-bold text-[#F0F0F0] hover:text-[#00D4AA] transition-colors"
+                            onClick={(e) => handleDeleteIdea(e, idea.id, idea.title)}
+                            disabled={deletingIdeaId === idea.id}
+                            className="text-[#888899] hover:text-[#FF4D4F] transition-colors disabled:opacity-50 disabled:cursor-not-allowed opacity-0 group-hover:opacity-100"
+                            title="Delete idea"
                           >
-                            {idea.owner.name || idea.owner.username}
+                            <Trash2 className="w-4 h-4" />
                           </button>
-                        ) : (
-                          <span className="font-bold text-[#F0F0F0]">{idea.owner?.name || 'Anonymous'}</span>
                         )}
-                        {' · '}{relativeTime(idea.created_at)}
-                      </span>
-                      <span className="text-sm font-bold text-[#F0F0F0] hover:text-[#00D4AA] flex items-center gap-1 transition-colors opacity-0 group-hover:opacity-100">
-                        View <ArrowRight className="w-3.5 h-3.5" />
-                      </span>
+                        <span className="text-sm font-bold text-[#6C47FF] flex items-center gap-1 transition-colors opacity-0 group-hover:opacity-100">
+                          View <ArrowRight className="w-3.5 h-3.5" />
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
