@@ -28,6 +28,11 @@ async def google_login(request: Request):
     return await oauth.google.authorize_redirect(request, settings.GOOGLE_REDIRECT_URI)
 
 
+@router.get("/auth/google/login")
+async def google_login_legacy(request: Request):
+    return await google_login(request)
+
+
 @router.get("/auth/google/callback")
 async def google_callback(request: Request):
     try:
