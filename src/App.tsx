@@ -16,6 +16,7 @@ import PitchDeckEditor from './components/PitchDeckEditor';
 import MVPArchitecture from './components/MVPArchitecture';
 import HowItWorks from './components/HowItWorks';
 import LandingNavbar from './components/LandingNavbar';
+import NeuralBrainBackground from './components/NeuralBrainBackground';
 import Settings from './components/Settings';
 import ErrorState from './components/ErrorState';
 import ComponentLibrary from './components/ComponentLibrary';
@@ -54,9 +55,13 @@ function HomeRoute() {
 // Landing route — shows the marketing "How VentureForge works" page with a
 // slim marketing navbar (not the authenticated app navbar). Available to both
 // signed-out and signed-in visitors so the marketing page stays browsable.
+// Signed-out visitors get the glowing neural-network background; signed-in
+// users see the clean page so the app feels focused when returning.
 function LandingRoute() {
+  const { authenticated } = useAuth();
   return (
     <>
+      {!authenticated && <NeuralBrainBackground />}
       <LandingNavbar />
       <HowItWorks hideNavbar />
     </>
