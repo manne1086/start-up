@@ -67,13 +67,13 @@ const OUTPUTS = [
   { icon: Cpu, label: 'MVP Blueprint', desc: 'Tech stack, architecture diagram, timeline & cost estimate.' },
 ];
 
-export default function HowItWorks() {
+export default function HowItWorks({ hideNavbar = false }: { hideNavbar?: boolean } = {}) {
   const { navigate } = useRouter();
   const { authenticated } = useAuth();
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-[#F0F0F0] font-sans">
-      <GlobalNavbar />
+      {!hideNavbar && <GlobalNavbar />}
 
       <main className="mx-auto max-w-5xl px-6 py-12 flex flex-col gap-24">
 

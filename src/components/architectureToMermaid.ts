@@ -43,12 +43,16 @@ function safeId(id: string): string {
 export function architectureToMermaid(model: ArchitectureModel): string {
   const lines: string[] = ['flowchart LR'];
 
-  // Style classes per node type
-  lines.push('  classDef frontend fill:#0D0D14,stroke:#00D4AA,stroke-width:2px,color:#F0F0F0');
-  lines.push('  classDef backend  fill:#0D0D14,stroke:#6C47FF,stroke-width:2px,color:#F0F0F0');
-  lines.push('  classDef ai       fill:#1A1425,stroke:#B8935A,stroke-width:2px,color:#F0F0F0');
-  lines.push('  classDef database fill:#0D0D14,stroke:#00D4AA,stroke-width:2px,color:#F0F0F0');
-  lines.push('  classDef external fill:#0D0D14,stroke:#888899,stroke-width:2px,color:#F0F0F0');
+  // Vibrant, colorful node style classes with strong fills + glow-like borders
+  lines.push('  classDef frontend fill:#00D4AA,stroke:#00FFCC,stroke-width:3px,color:#0A0A0F,font-weight:bold');
+  lines.push('  classDef backend  fill:#6C47FF,stroke:#9B7DFF,stroke-width:3px,color:#FFFFFF,font-weight:bold');
+  lines.push('  classDef ai       fill:#FF6B9D,stroke:#FF8FB6,stroke-width:3px,color:#FFFFFF,font-weight:bold');
+  lines.push('  classDef database fill:#FFB800,stroke:#FFCC33,stroke-width:3px,color:#0A0A0F,font-weight:bold');
+  lines.push('  classDef external fill:#4EA8DE,stroke:#7CC0EB,stroke-width:3px,color:#FFFFFF,font-weight:bold');
+  lines.push('  classDef cache    fill:#F76F53,stroke:#FF8F70,stroke-width:3px,color:#FFFFFF,font-weight:bold');
+  lines.push('  classDef queue    fill:#B47AEA,stroke:#CB9CF5,stroke-width:3px,color:#FFFFFF,font-weight:bold');
+  // Colorful edge styling
+  lines.push('  linkStyle default stroke:#00D4AA,stroke-width:2.5px');
 
   // Group nodes by layer
   const layers = [...(model.layers ?? [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -97,7 +101,9 @@ export function architectureToMermaid(model: ArchitectureModel): string {
     let cls = 'backend';
     if (t.includes('front') || t === 'ui') cls = 'frontend';
     else if (t.includes('ai') || t.includes('llm') || t.includes('agent')) cls = 'ai';
-    else if (t.includes('db') || t.includes('database') || t.includes('storage') || t.includes('cache')) cls = 'database';
+    else if (t.includes('cache') || t.includes('redis')) cls = 'cache';
+    else if (t.includes('queue') || t.includes('mq') || t.includes('bus')) cls = 'queue';
+    else if (t.includes('db') || t.includes('database') || t.includes('storage')) cls = 'database';
     else if (t.includes('user') || t.includes('external')) cls = 'external';
     lines.push(`  class ${safeId(n.id)} ${cls}`);
   }

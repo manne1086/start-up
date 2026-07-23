@@ -185,9 +185,11 @@ const FALLBACK_ARCHITECTURE = {
   ],
 };
 
-// Builds the architecture diagram from the actual AI-generated recommended stack,
-// instead of a static placeholder, so the diagram reflects the real output.
-function buildArchitectureFromStack(stack: TechStackItem[]) {
+// Builds the architecture diagram from the actual AI-generated recommended stack.
+// When the stack is thin (< 6 components), auto-augments with commonly-needed
+// infrastructure (auth, cache, storage, users, LLM, payment) inferred from the
+// idea so the diagram looks rich and realistic instead of a bare 3-node chain.
+function buildArchitectureFromStack(stack: TechStackItem[], idea: string = '') {
   const takenIds = new Set<string>();
   const nodes: ArchNode[] = stack.map((item) => {
     const bucket = bucketFor(item.layer);
@@ -200,37 +202,124 @@ function buildArchitectureFromStack(stack: TechStackItem[]) {
     };
   });
 
+  // Auto-augment thin stacks with realistic infrastructure based on idea keywords
+  const lower = idea.toLowerCase();
+  const hasAi = /\bai\b|agent|llm|copilot|assistant|gpt|ml|recommend|nlp|chat/.test(lower);
+  const hasPay = /pay|checkout|subscription|billing|store|marketplace|ecommerce|book/.test(lower);
+  const hasMedia = /video|image|photo|audio|upload|content|media|stream|file/.test(lower);
+  const hasRealtime = /chat|realtime|live|social|messag|notif|match/.test(lower);
+  const hasAuth = true; // Every app needs auth
+  const hasMap = /map|location|delivery|ride|logist|track/.test(lower);
+  const hasEmail = /email|newsletter|invite|notif/.test(lower);
+
+  const hasFrontend = nodes.some((n) => n.layer === 'frontend');
+  const hasBackend = nodes.some((n) => n.layer === 'backend');
+  const hasData = nodes.some((n) => n.layer === 'data');
+  const hasAiNode = nodes.some((n) => n.layer === 'ai');
+
+  // Users (always add)
+  const users: ArchNode = { id: slugify('users', takenIds), label: 'Users', type: 'external', layer: 'client', description: 'End users of the product' };
+  nodes.unshift(users);
+
+  if (!hasFrontend) {
+    nodes.push({ id: slugify('web', takenIds), label: 'Web App', type: 'frontend', layer: 'frontend', description: 'Next.js user interface' });
+  }
+  if (!hasBackend) {
+    nodes.push({ id: slugify('api', takenIds), label: 'API Gateway', type: 'backend', layer: 'backend', description: 'Main backend API' });
+  }
+  if (hasAuth && !nodes.some((n) => /auth/i.test(n.label))) {
+    nodes.push({ id: slugify('auth', takenIds), label: 'Auth Service', type: 'backend', layer: 'backend', description: 'Login, sessions, OAuth' });
+  }
+  if (!hasData) {
+    nodes.push({ id: slugify('db', takenIds), label: 'PostgreSQL', type: 'database', layer: 'data', description: 'Primary data store' });
+  }
+  // Cache is generally useful
+  if (!nodes.some((n) => /redis|cache/i.test(n.label))) {
+    nodes.push({ id: slugify('cache', takenIds), label: 'Redis', type: 'cache', layer: 'data', description: 'Session & response cache' });
+  }
+  if (hasMedia && !nodes.some((n) => /s3|storage|blob/i.test(n.label))) {
+    nodes.push({ id: slugify('storage', takenIds), label: 'S3 Storage', type: 'storage', layer: 'data', description: 'Files, media, uploads' });
+  }
+  if (hasAi && !hasAiNode) {
+    nodes.push({ id: slugify('llm', takenIds), label: 'LLM API', type: 'ai', layer: 'ai', description: 'Language model inference' });
+  }
+  if (hasAi && !nodes.some((n) => /vector|embed|pinecone|weaviate/i.test(n.label))) {
+    nodes.push({ id: slugify('vector', takenIds), label: 'Vector DB', type: 'database', layer: 'ai', description: 'Embeddings & semantic search' });
+  }
+  if (hasPay) {
+    nodes.push({ id: slugify('stripe', takenIds), label: 'Stripe', type: 'external', layer: 'external', description: 'Payments & subscriptions' });
+  }
+  if (hasMap) {
+    nodes.push({ id: slugify('maps', takenIds), label: 'Google Maps', type: 'external', layer: 'external', description: 'Geocoding & routing' });
+  }
+  if (hasEmail) {
+    nodes.push({ id: slugify('email', takenIds), label: 'Email (Resend)', type: 'external', layer: 'external', description: 'Transactional email' });
+  }
+  if (hasRealtime && !nodes.some((n) => /websocket|pusher|ably/i.test(n.label))) {
+    nodes.push({ id: slugify('ws', takenIds), label: 'WebSockets', type: 'backend', layer: 'backend', description: 'Real-time messaging' });
+  }
+
   const layerMap = new Map<string, ArchLayer>();
+  const ORDER: Record<string, number> = { client: 0, frontend: 1, backend: 2, ai: 3, data: 4, external: 5 };
+  const LABEL: Record<string, string> = { client: 'Client', frontend: 'Frontend', backend: 'Backend', ai: 'AI Layer', data: 'Data Layer', external: 'External Services' };
   nodes.forEach((n) => {
     if (layerMap.has(n.layer)) return;
-    const bucket = LAYER_BUCKETS.find((b) => b.id === n.layer);
-    layerMap.set(n.layer, bucket ? { id: bucket.id, label: bucket.label, order: bucket.order } : { id: n.layer, label: n.layer, order: 5 });
+    layerMap.set(n.layer, { id: n.layer, label: LABEL[n.layer] ?? n.layer, order: ORDER[n.layer] ?? 6 });
   });
   const layers = Array.from(layerMap.values()).sort((a, b) => a.order - b.order);
 
   const byLayer = (layerId: string) => nodes.filter((n) => n.layer === layerId);
+  const client = byLayer('client');
   const frontend = byLayer('frontend');
   const backend = byLayer('backend');
   const data = byLayer('data');
   const ai = byLayer('ai');
-  const other = byLayer('other');
+  const external = byLayer('external');
 
   const edges: ArchEdge[] = [];
-  const connect = (from: ArchNode[], to: ArchNode[], label: string) => {
-    from.forEach((f) => to.forEach((t) => edges.push({ from: f.id, to: t.id, label })));
-  };
+  const push = (from: string, to: string, label: string) => edges.push({ from, to, label });
 
-  if (frontend.length && backend.length) connect(frontend, backend, 'API');
-  if (backend.length && data.length) connect(backend, data, 'Read / Write');
-  if (backend.length && ai.length) connect(backend, ai, 'Prompt');
-  else if (!backend.length && frontend.length && ai.length) connect(frontend, ai, 'Prompt');
-  if (backend.length && other.length) connect(backend, other, 'Uses');
+  // Users → Frontend
+  if (client.length && frontend.length) {
+    client.forEach((c) => frontend.slice(0, 1).forEach((f) => push(c.id, f.id, 'Uses')));
+  }
+  // Frontend → Backend (main API)
+  const apiNode = backend.find((n) => /api|gateway/i.test(n.label)) ?? backend[0];
+  if (frontend.length && apiNode) {
+    frontend.forEach((f) => push(f.id, apiNode.id, 'HTTPS'));
+  }
+  // Frontend → Auth
+  const authNode = backend.find((n) => /auth/i.test(n.label));
+  if (frontend.length && authNode) {
+    frontend.slice(0, 1).forEach((f) => push(f.id, authNode.id, 'Login'));
+  }
+  // API → other backend services (except itself)
+  if (apiNode) {
+    backend.filter((n) => n.id !== apiNode.id && !/auth/i.test(n.label)).forEach((b) => push(apiNode.id, b.id, 'Calls'));
+  }
+  // API → Data
+  if (apiNode) {
+    data.forEach((d) => {
+      const label = /cache|redis/i.test(d.label) ? 'Cache' : /s3|storage/i.test(d.label) ? 'Files' : 'Read/Write';
+      push(apiNode.id, d.id, label);
+    });
+  }
+  // API → AI
+  if (apiNode) {
+    ai.forEach((a) => push(apiNode.id, a.id, /vector/i.test(a.label) ? 'Search' : 'Prompt'));
+  }
+  // API → External
+  if (apiNode) {
+    external.forEach((e) => {
+      const label = /stripe/i.test(e.label) ? 'Charge' : /map/i.test(e.label) ? 'Geocode' : /email/i.test(e.label) ? 'Send' : 'API';
+      push(apiNode.id, e.id, label);
+    });
+  }
 
-  // No layered structure could be inferred (e.g. a single unusual layer name) —
-  // fall back to a simple sequential chain so the diagram is still connected.
+  // Fallback: if we somehow got no edges, chain them
   if (edges.length === 0 && nodes.length > 1) {
     for (let i = 0; i < nodes.length - 1; i++) {
-      edges.push({ from: nodes[i].id, to: nodes[i + 1].id, label: '' });
+      push(nodes[i].id, nodes[i + 1].id, '');
     }
   }
 
@@ -270,8 +359,8 @@ export function buildVisualizationData(backendState: BackendState): Visualizatio
     : inferTechStack(idea);
 
   const architecture = Array.isArray(mvp?.recommended_stack) && mvp.recommended_stack.length
-    ? buildArchitectureFromStack(recommendedTechStack)
-    : FALLBACK_ARCHITECTURE;
+    ? buildArchitectureFromStack(recommendedTechStack, idea)
+    : buildArchitectureFromStack(inferTechStack(idea), idea);
 
   const competitors = normalizeCompetitors(market);
   const marketResearch = {

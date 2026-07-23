@@ -15,6 +15,7 @@ import LegalCompliance from './components/LegalCompliance';
 import PitchDeckEditor from './components/PitchDeckEditor';
 import MVPArchitecture from './components/MVPArchitecture';
 import HowItWorks from './components/HowItWorks';
+import LandingNavbar from './components/LandingNavbar';
 import Settings from './components/Settings';
 import ErrorState from './components/ErrorState';
 import ComponentLibrary from './components/ComponentLibrary';
@@ -50,10 +51,23 @@ function HomeRoute() {
   return authenticated ? <AuthenticatedHome /> : <Home />;
 }
 
+// Landing route — shows the marketing "How VentureForge works" page with a
+// slim marketing navbar (not the authenticated app navbar). Available to both
+// signed-out and signed-in visitors so the marketing page stays browsable.
+function LandingRoute() {
+  return (
+    <>
+      <LandingNavbar />
+      <HowItWorks hideNavbar />
+    </>
+  );
+}
+
 function AppContent() {
   return (
     <Routes>
-      <Route path="/" element={<Landing />} />
+      <Route path="/" element={<LandingRoute />} />
+      <Route path="/legacy-landing" element={<Landing />} />
       <Route path="/home" element={<HomeRoute />} />
       <Route path="/projects" element={<Projects />} />
       <Route path="/progress" element={<AgentProgress />} />
@@ -72,7 +86,7 @@ function AppContent() {
       <Route path="/community" element={<CommunityRoute />} />
       <Route path="/ideas/:id" element={<IdeaDetailRoute />} />
       <Route path="/users/:username" element={<UserProfile />} />
-      <Route path="*" element={<Landing />} />
+      <Route path="*" element={<LandingRoute />} />
     </Routes>
   );
 }

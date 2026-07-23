@@ -36,6 +36,7 @@ export default function MVPArchitecture() {
         team_size?: number;
         estimated_cost_inr?: string;
         recommended_stack?: Array<{ technology?: string; rationale?: string }>;
+        architecture_diagram?: string;
       }
     | null
     | undefined;
@@ -44,52 +45,40 @@ export default function MVPArchitecture() {
   const stack = mvp?.recommended_stack ?? [];
   const techStack = vizData.recommendedTechStack;
 
+  // Prefer the AI-generated Mermaid diagram when available. Fall back to the
+  // stack-derived diagram when the agent hasn't produced one, or if it's obviously
+  // truncated (< 3 lines).
+  const agentMermaid = (mvp?.architecture_diagram ?? '').trim();
+  const isRichAgentDiagram = agentMermaid.split('\n').length >= 4 && /flowchart|graph/i.test(agentMermaid);
+  const mermaidCode = isRichAgentDiagram ? agentMermaid : architectureToMermaid(architecture);
+
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-[#F0F0F0]">
       <GlobalNavbar />
 
       <main className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-6 py-8 overflow-x-hidden">
         <section className="rounded-3xl border border-white/10 bg-[#111118] p-6 shadow-[0_16px_40px_rgba(0,0,0,0.35)]">
-          <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.3em] text-[#888899]">
+              <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.3em] text-[#6C47FF]">
                 <Rocket className="h-4 w-4 text-[#6C47FF]" />
-                How it works
+                MVP Architecture
               </div>
-              <h1 className="text-3xl font-black text-white">From customer idea to working startup system</h1>
+              <h1 className="text-3xl font-black text-white">Build roadmap & system design</h1>
               <p className="mt-3 max-w-3xl text-sm leading-relaxed text-[#888899]">
-                VentureForge turns a plain startup idea into a guided workflow: it researches the market,
-                estimates the opportunity, maps the MVP architecture, and packages the output so founders
-                can make faster product and funding decisions.
+                A colorful, interactive blueprint of the recommended system for this idea — including
+                the tech stack, data layer, and how each component connects together.
               </p>
             </div>
-            <button className="inline-flex self-start items-center gap-2 rounded-xl border border-[#00D4AA]/30 bg-[#00D4AA]/10 px-4 py-2 text-sm font-bold text-[#00D4AA] lg:self-auto">
-              <Play className="h-4 w-4" />
-              Preview stack
-            </button>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-2xl border border-white/10 bg-[#0A0A0F] p-4">
-              <div className="text-xs uppercase tracking-[0.25em] text-[#888899]">For customers</div>
-              <div className="mt-2 text-base font-bold text-white">Less guesswork</div>
-              <p className="mt-2 text-sm leading-relaxed text-[#888899]">
-                Founders see the idea broken into clear modules, risks, and next steps instead of a vague pitch.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-[#0A0A0F] p-4">
-              <div className="text-xs uppercase tracking-[0.25em] text-[#888899]">How it runs</div>
-              <div className="mt-2 text-base font-bold text-white">Multi-agent pipeline</div>
-              <p className="mt-2 text-sm leading-relaxed text-[#888899]">
-                The app sequences research, planning, compliance, and finance so each module feeds the next.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-[#0A0A0F] p-4">
-              <div className="text-xs uppercase tracking-[0.25em] text-[#888899]">What they get</div>
-              <div className="mt-2 text-base font-bold text-white">Investor-ready outputs</div>
-              <p className="mt-2 text-sm leading-relaxed text-[#888899]">
-                Architecture, market intelligence, financials, and pitch content are delivered in one place.
-              </p>
+            <div className="flex flex-col gap-2 lg:items-end">
+              <div className="inline-flex items-center gap-2 rounded-xl border border-[#00D4AA]/30 bg-[#00D4AA]/10 px-4 py-2 text-sm font-bold text-[#00D4AA]">
+                <Play className="h-4 w-4" />
+                {mvp?.estimated_weeks ?? '—'} weeks to build
+              </div>
+              <div className="inline-flex items-center gap-2 rounded-xl border border-[#6C47FF]/30 bg-[#6C47FF]/10 px-4 py-2 text-sm font-bold text-[#C9BEFF]">
+                <Sparkles className="h-4 w-4" />
+                {mvp?.team_size ?? '—'} person team
+              </div>
             </div>
           </div>
 
@@ -139,13 +128,21 @@ export default function MVPArchitecture() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-white/10 bg-[#111118] p-6">
-          <div className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.3em] text-[#888899]">
-            <GitBranch className="h-4 w-4 text-[#00D4AA]" />
-            System Architecture (Mermaid)
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#111118] via-[#0F0F18] to-[#111118] p-6 shadow-[0_20px_60px_rgba(108,71,255,0.15)]">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.3em] text-white">
+              <GitBranch className="h-4 w-4 text-[#00D4AA]" />
+              System Architecture Roadmap
+            </div>
+            <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest">
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#00D4AA]" /> Frontend</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#6C47FF]" /> Backend</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#FF6B9D]" /> AI</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#FFB800]" /> Data</span>
+            </div>
           </div>
-          <div className="rounded-2xl border border-white/5 bg-[#0A0A0F] p-6">
-            <MermaidDiagram code={architectureToMermaid(architecture)} />
+          <div className="rounded-2xl border-2 border-[#6C47FF]/20 bg-gradient-to-br from-[#0A0A14] to-[#0D0D18] p-8">
+            <MermaidDiagram code={mermaidCode} />
           </div>
         </section>
 

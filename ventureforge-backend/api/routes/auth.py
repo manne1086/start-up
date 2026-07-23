@@ -74,7 +74,7 @@ async def google_callback(request: Request):
         "name": userinfo.get("name"),
         "picture": userinfo.get("picture"),
     }
-    return RedirectResponse(url=f"{settings.FRONTEND_URL}/?auth=success", status_code=302)
+    return RedirectResponse(url=f"{settings.FRONTEND_URL}/home?auth=success", status_code=302)
 
 
 @router.get("/auth/me")
