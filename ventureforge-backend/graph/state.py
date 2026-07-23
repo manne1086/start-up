@@ -113,6 +113,7 @@ class BrandTokens(BaseModel):
 class PitchDeckData(BaseModel):
     slides: list[PitchSlide] = []
     brand: BrandTokens
+    template: str = "pritzker"  # pritzker | fashion | indie
     presenton_id: str | None = None
     presenton_download_url: str | None = None
     presenton_edit_url: str | None = None

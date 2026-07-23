@@ -10,24 +10,29 @@ from pydantic import BaseModel
 from core.config import settings
 from graph.state import AgentLog, StartupState
 
+# Groq model — llama-3.3-70b-versatile has 128K context, well-supported for
+# structured output. Alternatives: moonshotai/kimi-k2-instruct (256K, larger
+# but slower), qwen/qwen3-32b (131K).
+MODEL_NAME = settings.GROQ_MODEL or "llama-3.3-70b-versatile"
+
 reasoning_llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
+    model=MODEL_NAME,
     temperature=0.3,
-    max_tokens=4096,
+    max_tokens=8192,
     api_key=settings.GROQ_API_KEY,
 )
 
 code_llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
+    model=MODEL_NAME,
     temperature=0.3,
-    max_tokens=4096,
+    max_tokens=8192,
     api_key=settings.GROQ_API_KEY,
 )
 
 validator_llm = ChatGroq(
-    model="llama-3.3-70b-versatile",
-    temperature=0.3,
-    max_tokens=2048,
+    model=MODEL_NAME,
+    temperature=0.2,
+    max_tokens=4096,
     api_key=settings.GROQ_API_KEY,
 )
 
@@ -83,4 +88,3 @@ async def structured_validation(prompt: str, output_model: type[T], *, state: St
 async def structured_code(prompt: str, output_model: type[T], *, state: StartupState | None = None) -> T:
     structured = code_llm.with_structured_output(output_model)
     return await structured.ainvoke(prompt)
-

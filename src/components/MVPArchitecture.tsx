@@ -1,6 +1,7 @@
 import { Cpu, Layers3, Play, Rocket, Server, Sparkles, Database, GitBranch } from 'lucide-react';
 import GlobalNavbar from './GlobalNavbar';
-import ArchitectureCanvas from './ArchitectureCanvas';
+import MermaidDiagram from './MermaidDiagram';
+import { architectureToMermaid } from './architectureToMermaid';
 import type { ArchitectureModel } from './architecture-types';
 import { useGeneration } from '../generation';
 import { buildVisualizationData } from '../visualizationData';
@@ -138,7 +139,15 @@ export default function MVPArchitecture() {
           </div>
         </section>
 
-        <ArchitectureCanvas architecture={architecture} />
+        <section className="rounded-3xl border border-white/10 bg-[#111118] p-6">
+          <div className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.3em] text-[#888899]">
+            <GitBranch className="h-4 w-4 text-[#00D4AA]" />
+            System Architecture (Mermaid)
+          </div>
+          <div className="rounded-2xl border border-white/5 bg-[#0A0A0F] p-6">
+            <MermaidDiagram code={architectureToMermaid(architecture)} />
+          </div>
+        </section>
 
         <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="rounded-3xl border border-white/10 bg-[#111118] p-6">

@@ -1,11 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
-import { Presentation, Download, Share2, Play, ChevronLeft, ChevronRight, RefreshCw, MoveVertical, FileText, Plus, Trash2, Copy, Maximize, Edit3, Loader2, Eye } from 'lucide-react';
+import { Presentation, Download, Share2, Play, ChevronLeft, ChevronRight, RefreshCw, MoveVertical, FileText, Plus, Trash2, Copy, Maximize, Edit3, Loader2, Eye, Palette } from 'lucide-react';
 import { useGeneration } from '../generation';
 import { useRouter } from '../router';
 import GlobalNavbar from './GlobalNavbar';
 import { downloadPitchDeckPptx } from '../pptx';
 import { exportStartupPdf } from '../pdfExport';
 import { regenerateSlideContent } from '../pitchDeckApi';
+import PitchSlideRenderer from './pitch/PitchSlideRenderer';
+
+type TemplateKey = 'pritzker' | 'fashion' | 'indie';
+const TEMPLATE_LABELS: Record<TemplateKey, string> = {
+  pritzker: 'Pritzker · Editorial',
+  fashion: 'Fashion Weekly',
+  indie: 'Indie Bookstore Zine',
+};
 
 type Slide = {
   id: number;
@@ -40,6 +48,10 @@ export default function PitchDeckEditor() {
   // Local state for slide editing
   const [slides, setSlides] = useState<Slide[]>(initialDeck?.slides ?? []);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  const initialTemplate = ((initialDeck as any)?.template as TemplateKey | undefined) ?? 'pritzker';
+  const [template, setTemplate] = useState<TemplateKey>(
+    (['pritzker', 'fashion', 'indie'] as TemplateKey[]).includes(initialTemplate) ? initialTemplate : 'pritzker'
+  );
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
@@ -307,6 +319,20 @@ export default function PitchDeckEditor() {
         </div>
         
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/5 border border-white/10">
+            <Palette className="w-3.5 h-3.5 text-[#B8935A]" />
+            <select
+              value={template}
+              onChange={(e) => setTemplate(e.target.value as TemplateKey)}
+              className="bg-transparent text-xs font-bold text-white/90 focus:outline-none cursor-pointer pr-1"
+            >
+              {(Object.keys(TEMPLATE_LABELS) as TemplateKey[]).map((k) => (
+                <option key={k} value={k} className="bg-[#111118] text-white">
+                  {TEMPLATE_LABELS[k]}
+                </option>
+              ))}
+            </select>
+          </div>
           <button onClick={toggleFullscreen} className="px-3 py-1.5 bg-transparent text-[#888899] font-bold text-xs hover:text-white transition-colors flex items-center gap-2 rounded-lg hover:bg-white/5">
             <Maximize className="w-3.5 h-3.5" /> Fullscreen
           </button>
@@ -317,11 +343,7 @@ export default function PitchDeckEditor() {
           <button onClick={() => exportStartupPdf(backendState, deckTitle)} className="px-4 py-1.5 bg-transparent border border-[#00D4AA]/50 text-[#00D4AA] font-bold text-xs hover:bg-[#00D4AA] hover:text-[#0A0A0F] rounded-lg transition-all flex items-center gap-2">
             <FileText className="w-3.5 h-3.5" /> PDF
           </button>
-          {presentonEditUrl && (
-            <button onClick={handleViewPpt} className="px-4 py-1.5 bg-transparent border border-[#6C47FF]/50 text-[#C9BEFF] font-bold text-xs hover:bg-[#6C47FF] hover:text-white rounded-lg transition-all flex items-center gap-2">
-              <Eye className="w-3.5 h-3.5" /> View PPT
-            </button>
-          )}
+          {/* External PPT redirect removed — deck renders in-app via PitchSlideRenderer */}
           <button onClick={handleDownload} disabled={isDownloading} className="px-4 py-1.5 bg-[#6C47FF] text-white font-bold text-xs hover:bg-[#5a3ae0] rounded-lg transition-all flex items-center gap-2 shadow-[0_0_15px_rgba(108,71,255,0.3)] hover:shadow-[0_0_20px_rgba(108,71,255,0.5)] disabled:opacity-50 disabled:cursor-not-allowed">
             {isDownloading ? (
               <>
@@ -395,43 +417,18 @@ export default function PitchDeckEditor() {
 
           {/* Main Canvas Area */}
           <div className="flex-1 p-4 md:p-8 flex items-center justify-center relative bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#1a1a24] to-[#0A0A0F]">
-            {hasSlideImages ? (
-              <div
-                ref={canvasRef}
-                className={`w-full max-w-[1024px] aspect-video bg-[#0D0D14] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden transition-all duration-500 ease-in-out flex items-center justify-center ${isFullscreen ? 'border-none rounded-none w-screen h-screen max-w-none' : 'rounded-[24px]'}`}
-              >
-                <img
-                  key={activeSlideIndex}
-                  src={`${API_URL}/api/outputs/${threadId}/slide-image/${activeSlideIndex + 1}`}
-                  alt={activeSlide?.title ?? `Slide ${activeSlideIndex + 1}`}
-                  className="w-full h-full object-contain animate-fadeInUp"
-                />
-                <div className="absolute bottom-3 right-4 text-white/60 font-mono text-xs z-10 bg-black/40 px-2 py-1 rounded">
-                  {activeSlideIndex + 1} / {slides.length}
-                </div>
-              </div>
-            ) : (
-              <div
-                ref={canvasRef}
-                className={`w-full max-w-[1024px] aspect-video bg-[#0D0D14] border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col p-10 md:p-14 relative overflow-hidden transition-all duration-500 ease-in-out ${isFullscreen ? 'border-none rounded-none w-screen h-screen max-w-none' : 'rounded-[24px]'}`}
-              >
-                <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-b from-[#6C47FF]/10 to-transparent rounded-full blur-3xl -mr-[300px] -mt-[300px] pointer-events-none transition-all duration-700"></div>
-                <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-t from-[#00D4AA]/5 to-transparent rounded-full blur-3xl -ml-[200px] -mb-[200px] pointer-events-none transition-all duration-700"></div>
-
-                {activeSlide?.type !== 'title' && (
-                  <div className="flex items-center gap-4 mb-8 z-10 animate-fadeInDown">
-                    <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight">{activeSlide?.title ?? 'Slide'}</h2>
-                    <div className="h-1 flex-1 bg-gradient-to-r from-[#6C47FF] to-transparent rounded-full opacity-30 mt-2"></div>
-                  </div>
-                )}
-
-                {renderSlideContent(activeSlide)}
-
-                <div className="absolute bottom-6 right-8 text-[#555566] font-mono text-xs z-10">
-                  {activeSlideIndex + 1}
-                </div>
-              </div>
-            )}
+            <div
+              ref={canvasRef}
+              className={`w-full max-w-[1024px] aspect-video border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative overflow-hidden transition-all duration-500 ease-in-out ${isFullscreen ? 'border-none rounded-none w-screen h-screen max-w-none' : 'rounded-[24px]'}`}
+            >
+              <PitchSlideRenderer
+                slide={activeSlide ?? {}}
+                template={template}
+                startup={deckTitle}
+                slideIndex={activeSlideIndex}
+                totalSlides={slides.length}
+              />
+            </div>
           </div>
 
           {/* Bottom Control Bar */}

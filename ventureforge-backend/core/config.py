@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5433/ventureforge"
     REDIS_URL: str = "redis://localhost:6379/0"
     GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
     TAVILY_API_KEY: str = ""
     UNSPLASH_ACCESS_KEY: str = ""
     PRESENTATIONS_AI_API_KEY: str = ""

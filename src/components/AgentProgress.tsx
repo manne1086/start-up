@@ -302,21 +302,6 @@ export default function AgentProgress() {
         </div>
       </motion.div>
 
-      {/* Pipeline Timeline */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="w-full bg-[#0D0D14] border-b border-white/5 overflow-x-auto custom-scrollbar relative shrink-0"
-      >
-        <PipelineTimeline
-          completed={completed}
-          currentStep={currentStep}
-          isPaused={isPaused}
-          progressCount={progressCount}
-          progressTotal={progressTotal}
-        />
-      </motion.div>
 
       {/* Main Content */}
       <main className="flex-1 min-h-0 flex flex-col lg:flex-row w-full overflow-hidden">
