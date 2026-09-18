@@ -12,8 +12,13 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5433/ventureforge"
     REDIS_URL: str = "redis://localhost:6379/0"
     GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
     TAVILY_API_KEY: str = ""
+    # Image generation (Hugging Face Inference API). HF_TOKEN is accepted as an
+    # alias so the service also works with the conventional variable name.
+    HUGGINGFACE_API_KEY: str = ""
+    HF_TOKEN: str = ""
+    FLUX_MODEL: str = "black-forest-labs/FLUX.1-schnell"
     UNSPLASH_ACCESS_KEY: str = ""
     PRESENTATIONS_AI_API_KEY: str = ""
     PRESENTATIONS_AI_BASE_URL: str = "https://api.presenton.ai"

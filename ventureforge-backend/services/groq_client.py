@@ -10,10 +10,9 @@ from pydantic import BaseModel
 from core.config import settings
 from graph.state import AgentLog, StartupState
 
-# Groq model — llama-3.3-70b-versatile has 128K context, well-supported for
-# structured output. Alternatives: moonshotai/kimi-k2-instruct (256K, larger
-# but slower), qwen/qwen3-32b (131K).
-MODEL_NAME = settings.GROQ_MODEL or "llama-3.3-70b-versatile"
+# Groq's recommended replacement for the deprecated Llama 3.3 70B model.
+# GPT-OSS 120B supports the same 131K-token context-window class.
+MODEL_NAME = settings.GROQ_MODEL or "openai/gpt-oss-120b"
 
 reasoning_llm = ChatGroq(
     model=MODEL_NAME,
@@ -39,6 +38,21 @@ validator_llm = ChatGroq(
 T = TypeVar("T", bound=BaseModel)
 
 
+class DailyTokenLimitError(Exception):
+    """The Groq per-day token budget is spent — retrying cannot help today."""
+
+
+def _is_daily_limit(exc: Exception) -> bool:
+    """
+    Distinguish a per-DAY quota from a per-minute burst limit.
+
+    Per-minute limits clear in seconds and are worth retrying. Per-day limits
+    reset hours later, so retrying only burns wall-clock time and still fails.
+    """
+    msg = str(exc).lower()
+    return "per day" in msg or "tpd" in msg or "rpd" in msg
+
+
 def retry_groq(fn):
     @wraps(fn)
     async def wrapper(*args, **kwargs):
@@ -49,6 +63,21 @@ def retry_groq(fn):
                 return await fn(*args, **kwargs)
             except (groq.RateLimitError, groq.APIError) as exc:
                 last_exc = exc
+
+                if isinstance(exc, groq.RateLimitError) and _is_daily_limit(exc):
+                    if state is not None:
+                        state.agent_logs.append(
+                            AgentLog(
+                                agent="Groq Client",
+                                message=(
+                                    "Daily token limit reached on the Groq free tier. "
+                                    "Skipping retries — the quota resets on Groq's schedule."
+                                ),
+                                status="warning",
+                            )
+                        )
+                    raise DailyTokenLimitError(str(exc)) from exc
+
                 if state is not None:
                     state.agent_logs.append(
                         AgentLog(
