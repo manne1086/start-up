@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 export default memo(function FinancialChart({
@@ -8,6 +8,7 @@ export default memo(function FinancialChart({
   years: number[];
   series: Array<{ name: string; values: number[] }>;
 }) {
+  const [visible, setVisible] = useState({ revenue: true, ebitda: true, fcf: true });
   const data = years.map((year, index) => ({
     year: `Year ${year}`,
     revenue: series[0]?.values[index] ?? 0,
@@ -22,7 +23,14 @@ export default memo(function FinancialChart({
           <div className="flex items-center gap-2 text-sm font-black text-white"><span className="chart-pulse" />Financial Projection</div>
           <div className="text-xs text-[#888899]">Five-year sketch chart</div>
         </div>
-        <div className="text-[10px] uppercase tracking-[0.35em] text-[#888899]">Recharts + Rough</div>
+        <div className="flex gap-2">
+          {[['revenue', 'Revenue'], ['ebitda', 'EBITDA'], ['fcf', 'FCF']].map(([key, label]) => (
+            <button key={key} onClick={() => setVisible((current) => ({ ...current, [key]: !current[key as keyof typeof current] }))}
+              className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider border transition-colors ${visible[key as keyof typeof visible] ? 'border-[#8B6CFF]/60 text-white bg-white/[0.06]' : 'border-white/[0.08] text-[#666678]'}`}>
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="h-[360px]">
         <ResponsiveContainer width="100%" height="100%">
@@ -32,9 +40,9 @@ export default memo(function FinancialChart({
             <YAxis stroke="#888899" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${Math.round(Number(value) / 1000)}K`} />
             <Tooltip contentStyle={{ backgroundColor: '#0A0A0F', borderColor: '#6C47FF', color: '#fff' }} />
             <Legend wrapperStyle={{ fontSize: 12, color: '#888899' }} />
-            <Area isAnimationActive animationDuration={1300} type="monotone" dataKey="revenue" name="Revenue" stroke="#8B6CFF" fill="rgba(108,71,255,0.16)" strokeWidth={3} activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }} />
-            <Area isAnimationActive animationDuration={1500} animationBegin={180} type="monotone" dataKey="ebitda" name="EBITDA" stroke="#00D4AA" fill="rgba(0,212,170,0.12)" strokeWidth={3} activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }} />
-            <Area isAnimationActive animationDuration={1700} animationBegin={320} type="monotone" dataKey="fcf" name="Free Cash Flow" stroke="#4DA3FF" fill="rgba(77,163,255,0.10)" strokeWidth={2} activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }} />
+            {visible.revenue && <Area isAnimationActive animationDuration={1300} type="monotone" dataKey="revenue" name="Revenue" stroke="#8B6CFF" fill="rgba(108,71,255,0.16)" strokeWidth={3} activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }} />}
+            {visible.ebitda && <Area isAnimationActive animationDuration={1500} animationBegin={180} type="monotone" dataKey="ebitda" name="EBITDA" stroke="#00D4AA" fill="rgba(0,212,170,0.12)" strokeWidth={3} activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }} />}
+            {visible.fcf && <Area isAnimationActive animationDuration={1700} animationBegin={320} type="monotone" dataKey="fcf" name="Free Cash Flow" stroke="#4DA3FF" fill="rgba(77,163,255,0.10)" strokeWidth={2} activeDot={{ r: 5, strokeWidth: 2, stroke: '#fff' }} />}
           </AreaChart>
         </ResponsiveContainer>
       </div>

@@ -1,15 +1,19 @@
 from graph.state import FinancialAssumptions, FinancialModel, YearProjection
+import hashlib
 import numpy_financial as npf
 import pandas as pd
 
 
 def build_financial_model(seed: str) -> FinancialModel:
+    # Keep fallback models deterministic, but make them specific to the idea.
+    # Previously every idea used the same hard-coded assumptions and chart.
+    fingerprint = int(hashlib.sha256(seed.encode("utf-8")).hexdigest()[:8], 16)
     assumptions = FinancialAssumptions(
-        monthly_subscriptions_y1=1000,
-        price_per_unit=499.0,
-        churn_rate=0.05,
-        tax_rate=0.25,
-        cagr=0.60,
+        monthly_subscriptions_y1=400 + fingerprint % 1200,
+        price_per_unit=199.0 + (fingerprint % 700),
+        churn_rate=0.03 + ((fingerprint >> 4) % 8) / 100,
+        tax_rate=0.20 + ((fingerprint >> 8) % 11) / 100,
+        cagr=0.35 + ((fingerprint >> 12) % 45) / 100,
     )
     projections: list[YearProjection] = []
     revenue = assumptions.monthly_subscriptions_y1 * assumptions.price_per_unit * 12

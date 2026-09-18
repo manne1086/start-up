@@ -293,46 +293,6 @@ export default function ResultsDashboard() {
           {/* ── Main grid ── */}
           <div className="xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-            {/* Market Research card — Aqua accent */}
-            <div className="bg-[#111118] rounded-2xl p-6 flex flex-col cursor-pointer transition-all duration-200 hover:border-[#00D4AA]/50 hover:shadow-[0_0_20px_rgba(0,212,170,0.1)] animate-fadeInUp border-2 border-white/[0.06]"
-                 style={{ animationDelay: '200ms', borderLeftWidth: '4px', borderLeftColor: '#00D4AA' }}
-                 onClick={() => navigate('market')}>
-              <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#00D4AA]/10 flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-[#00D4AA]" />
-                  </div>
-                  <div>
-                    <h6 className="font-bold text-[#F0F0F0] text-sm">Market Research</h6>
-                    <p className="text-xs text-[#888899]">Primary market analysis</p>
-                  </div>
-                </div>
-              </div>
-              <div className="mb-6 flex-1">
-                <div className="font-black text-[#00D4AA] text-3xl tracking-tight mb-2">
-                  {market?.tam?.toString() ?? 'N/A'}
-                </div>
-                <div className="text-xs text-[#888899] font-medium mb-3">
-                  Total Addressable Market
-                </div>
-                <div className="text-xs text-[#555566] bg-[#00D4AA]/5 px-2.5 py-1.5 rounded-lg w-fit">
-                  {market?.tam_source?.toString() ?? 'Market data'}
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2 pt-4 border-t border-white/[0.06]">
-                {Array.isArray(market?.competitors)
-                  ? (market.competitors as Array<Record<string, unknown>>).slice(0, 3).map((comp, i) => (
-                      <span key={i} className="px-2.5 py-1 bg-[#00D4AA]/10 border border-[#00D4AA]/30 text-[#00D4AA] text-[10px] font-bold rounded-lg">
-                        {comp.name?.toString() ?? 'Competitor'}
-                      </span>
-                    ))
-                  : null}
-              </div>
-              <div className="mt-4 flex items-center gap-2 text-[11px] font-bold text-[#00D4AA] uppercase tracking-widest cursor-pointer hover:gap-3 transition-all">
-                Explore <ArrowRight className="w-3 h-3" />
-              </div>
-            </div>
-
             {/* Financial Model card — spans 2 cols, Purple accent */}
             <div className="md:col-span-2 bg-[#111118] rounded-2xl p-6 flex flex-col cursor-pointer transition-all duration-200 hover:border-[#6C47FF]/50 hover:shadow-[0_0_20px_rgba(108,71,255,0.1)] animate-fadeInUp border-2 border-white/[0.06]"
                  style={{ animationDelay: '250ms', borderLeftWidth: '4px', borderLeftColor: '#6C47FF' }}>
