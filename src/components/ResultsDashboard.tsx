@@ -19,8 +19,6 @@ import {
   Loader2,
   Users,
   TrendingUp,
-  Target,
-  Zap,
   BarChart3,
 } from 'lucide-react';
 import JSZip from 'jszip';
@@ -268,64 +266,6 @@ export default function ResultsDashboard() {
 
         {/* ── Plain-English briefing (leads the page) ── */}
         <ExecutiveBriefing briefing={backendState?.briefing as Briefing | undefined} />
-
-        {/* ── Key Metrics Section ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12 animate-fadeInUp" style={{ animationDelay: '50ms' }}>
-          {[
-            {
-              icon: Globe,
-              label: 'Total market each year',
-              value: market?.tam?.toString() ?? '—',
-              subtext: 'What everyone spends (TAM)',
-              accentColor: '#00D4AA',
-              trend: '↑'
-            },
-            {
-              icon: Target,
-              label: 'How good the opening looks',
-              value: market?.opportunity_score ? `${market.opportunity_score}%` : '—',
-              subtext: 'Higher is better',
-              accentColor: '#6C47FF',
-              trend: '↑'
-            },
-            {
-              icon: BarChart3,
-              label: 'How fast it is growing',
-              value: market?.growth_rate ? `${market.growth_rate}%` : '—',
-              subtext: 'Per year',
-              accentColor: '#00D4AA',
-              trend: market?.growth_rate && market.growth_rate > 0 ? '↑' : '→'
-            },
-            {
-              icon: Zap,
-              label: 'How crowded it is',
-              value: market?.competitive_intensity ? market.competitive_intensity.charAt(0).toUpperCase() + market.competitive_intensity.slice(1) : '—',
-              subtext: 'Number of rivals',
-              accentColor: '#FFB800',
-              trend: '='
-            },
-          ].map(({ icon: Icon, label, value, subtext, accentColor, trend }, i) => (
-            <div
-              key={label}
-              className="bg-[#111118]/90 rounded-2xl p-5 border border-white/[0.06] hover:border-white/[0.16] transition-all group card-hover animate-fadeInUp"
-              style={{
-                animationDelay: `${100 + i * 50}ms`,
-                borderLeftWidth: '3px',
-                borderLeftColor: accentColor,
-              }}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <Icon className="w-5 h-5" style={{ color: accentColor }} />
-                <span className="text-xs font-bold uppercase tracking-widest text-[#888899]">{trend}</span>
-              </div>
-              <div className="text-xs text-[#888899] font-medium uppercase tracking-wider mb-1">{label}</div>
-              <div className="text-2xl font-black text-white mb-1" style={{ color: accentColor }}>
-                {value}
-              </div>
-              <div className="text-xs text-[#555566] font-medium">{subtext}</div>
-            </div>
-          ))}
-        </div>
 
         {/* ── Export Section (Prominent CTAs) ── */}
         <div className="mb-12 p-8 rounded-2xl bg-gradient-to-br from-[#6C47FF]/10 to-[#00D4AA]/10 border border-[#6C47FF]/30 animate-fadeInUp" style={{ animationDelay: '150ms' }}>
