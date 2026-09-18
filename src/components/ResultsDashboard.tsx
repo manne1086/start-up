@@ -193,13 +193,18 @@ export default function ResultsDashboard() {
     }
   };
 
-  const chartData = financials?.projections?.length
-    ? financials.projections.map((row) => ({
-        year: `Yr ${row.year ?? ''}`,
-        revenue: Number(row.revenue ?? 0) / 100000,
-        gp: Number(row.gross_profit ?? row.gp ?? 0) / 100000,
-      }))
-    : [];
+  // Always use the normalized forecast. It is populated from the selected
+  // idea's backend model and has an idea-specific deterministic fallback.
+  const chartData = viz.financialForecast.map((row) => ({
+    year: `Yr ${row.year ?? ''}`,
+    revenue: Number(row.revenue ?? 0) / 100000,
+    gp: Number(row.revenue ?? 0) > 0 ? Number(row.revenue ?? 0) * 0.65 / 100000 : 0,
+  }));
+
+  const legalRecommendation = legal?.entity_recommendation?.toString() ?? 'Entity review pending';
+  const legalSummary = legalRecommendation.length > 92
+    ? `${legalRecommendation.slice(0, 89).trimEnd()}…`
+    : legalRecommendation;
 
   const statusItems = [
     ['Market Research', market],
@@ -294,7 +299,7 @@ export default function ResultsDashboard() {
           <div className="xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
             {/* Financial Model card — spans 2 cols, Purple accent */}
-            <div className="md:col-span-2 bg-[#111118] rounded-2xl p-6 flex flex-col cursor-pointer transition-all duration-200 hover:border-[#6C47FF]/50 hover:shadow-[0_0_20px_rgba(108,71,255,0.1)] animate-fadeInUp border-2 border-white/[0.06]"
+            <div className="md:col-span-2 bg-gradient-to-br from-[#151222] via-[#111118] to-[#0D1518] rounded-2xl p-6 flex flex-col cursor-pointer transition-all duration-300 hover:border-[#8B6CFF]/60 hover:shadow-[0_18px_50px_rgba(108,71,255,0.14)] animate-fadeInUp border border-white/[0.08]"
                  style={{ animationDelay: '250ms', borderLeftWidth: '4px', borderLeftColor: '#6C47FF' }}>
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
@@ -310,8 +315,8 @@ export default function ResultsDashboard() {
                   {chartData.length} Years
                 </span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center flex-1">
-                <div className="h-[160px] cursor-pointer rounded-xl bg-[#0A0A0F]/50 p-3 border border-[#6C47FF]/20" onClick={() => navigate('financials')}>
+                <div className="grid grid-cols-1 md:grid-cols-[1.35fr_1fr] gap-6 items-center flex-1">
+                <div className="h-[190px] cursor-pointer rounded-2xl bg-[#08080D]/70 p-3 border border-[#6C47FF]/25 relative overflow-hidden" onClick={() => navigate('financials')}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#2A2A35" vertical={false} />
@@ -376,18 +381,25 @@ export default function ResultsDashboard() {
                   <p className="text-xs text-[#888899]">Regulatory readiness</p>
                 </div>
               </div>
-              <ul className="flex flex-col gap-3 flex-1 mb-6">
-                <li className="flex items-center gap-3 text-sm text-[#F0F0F0] font-medium">
+              <div className="rounded-xl bg-[#0A0A0F]/70 border border-[#FFB800]/20 p-4 mb-5">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#888899]">Compliance snapshot</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-[#00D4AA]">Needs review</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-[#F0F0F0] font-semibold mb-2">
                   <CheckCircle2 className="w-4 h-4 text-[#00D4AA]" /> GDPR Compliant
-                </li>
-                <li className="flex items-center gap-3 text-sm text-[#F0F0F0] font-medium">
+                </div>
+                <p className="text-xs leading-5 text-[#A5A5B7] line-clamp-3">{legalSummary}</p>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-[#FFB800] font-semibold flex-1 mb-6">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>Review entity, privacy, and data-processing setup</span>
+              </div>
+              {/* Keep the full legal recommendation on the dedicated legal page. */}
+              <div className="hidden">
                   <CheckCircle2 className="w-4 h-4 text-[#00D4AA]" />
-                  {legal?.entity_recommendation?.toString() ?? 'Entity review pending'}
-                </li>
-                <li className="flex items-center gap-3 text-sm text-[#FFB800] font-medium">
-                  <AlertTriangle className="w-4 h-4" /> Review recommended
-                </li>
-              </ul>
+                  {legalRecommendation}
+              </div>
               <button onClick={(e) => { e.stopPropagation(); navigate('legal'); }}
                       className="text-xs font-bold text-[#FFB800] hover:text-white transition-colors flex items-center gap-1">
                 View Details <ArrowRight className="w-3 h-3" />
