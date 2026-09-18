@@ -1,7 +1,10 @@
 import asyncio
+import json
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
+from graph.nodes.briefing import briefing
 from graph.nodes.business_planning import business_planning
 from graph.nodes.financial_engineering import financial_engineering
 from graph.nodes.legal_compliance import legal_compliance
@@ -12,6 +15,7 @@ from graph.nodes.pitch_deck import pitch_deck
 from graph.nodes.pivot_simulator import pivot_simulator
 from graph.nodes.validator import validator_financial, validator_market
 from graph.state import AgentLog, StartupState
+from core.database import execute, fetch_one
 from services.stream_manager import push_event, get_queue
 
 
@@ -25,6 +29,42 @@ class RunRecord:
 
 
 RUNS: dict[str, RunRecord] = {}
+RUN_STATE_DIR = Path(__file__).resolve().parents[1] / ".run_states"
+RUN_STATE_DIR.mkdir(exist_ok=True)
+
+
+async def _persist_run_state(state: StartupState, paused: bool, done: bool) -> None:
+    payload = {"state": json.loads(state.model_dump_json()), "paused": paused, "done": done}
+    try:
+        await execute(
+            """
+            INSERT INTO ventureforge_run_states (thread_id, state, paused, done, updated_at)
+            VALUES (%s, %s::jsonb, %s, %s, NOW())
+            ON CONFLICT (thread_id)
+            DO UPDATE SET
+                state = EXCLUDED.state,
+                paused = EXCLUDED.paused,
+                done = EXCLUDED.done,
+                updated_at = NOW()
+            """,
+            (state.thread_id, state.model_dump_json(), paused, done),
+        )
+    except Exception:
+        (RUN_STATE_DIR / f"{state.thread_id}.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+async def _load_persisted_state(thread_id: str) -> StartupState | None:
+    try:
+        row = await fetch_one("SELECT state FROM ventureforge_run_states WHERE thread_id = %s", (thread_id,))
+        if row:
+            return StartupState.model_validate(row["state"])
+    except Exception:
+        pass
+    path = RUN_STATE_DIR / f"{thread_id}.json"
+    if not path.exists():
+        return None
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    return StartupState.model_validate(payload["state"])
 
 
 def _humanize_node_name(node_name: str) -> str:
@@ -39,6 +79,7 @@ def _humanize_node_name(node_name: str) -> str:
         "pitch_deck": "Pitch Deck",
         "mvp_architecture": "MVP Architecture",
         "pivot_simulator": "Pivot Simulator",
+        "briefing": "Executive Briefing",
     }.get(node_name, node_name.replace("_", " ").title())
 
 
@@ -88,6 +129,7 @@ async def run_until_pause(thread_id: str) -> None:
         state.status = "paused"
         record.state = state
         record.paused = True
+        await _persist_run_state(state, paused=True, done=False)
         await emit(thread_id, "review", {"awaiting_human_review": True, "state": state.model_dump(mode="json")})
         await emit(thread_id, "status", {"status": "paused", "thread_id": thread_id})
 
@@ -108,6 +150,7 @@ async def run_after_resume(thread_id: str) -> None:
             ("pitch_deck", pitch_deck),
             ("mvp_architecture", mvp_architecture),
             ("pivot_simulator", pivot_simulator),
+            ("briefing", briefing),
         ]:
             await emit(thread_id, "step", {"node": node_name, "status": "started"})
             await trace_node_start(thread_id, state, node_name)
@@ -120,18 +163,30 @@ async def run_after_resume(thread_id: str) -> None:
         state.status = "complete"
         record.state = state
         record.done = True
+        await _persist_run_state(state, paused=False, done=True)
         await emit(thread_id, "complete", {"thread_id": thread_id, "state": state.model_dump(mode="json")})
 
 
 async def start_run(state: StartupState) -> StartupState:
     record = RunRecord(state=state)
     RUNS[state.thread_id] = record
+    await _persist_run_state(state, paused=False, done=False)
     record.task = asyncio.create_task(run_until_pause(state.thread_id))
     return state
 
 
+class RunNotFoundError(Exception):
+    """The run is no longer in memory — usually the server restarted mid-run."""
+
+
 async def resume_run(thread_id: str, patch: dict[str, Any] | None = None) -> StartupState:
-    record = RUNS[thread_id]
+    record = RUNS.get(thread_id)
+    if record is None:
+        persisted = await _load_persisted_state(thread_id)
+        if persisted is None:
+            raise RunNotFoundError(thread_id)
+        record = RunRecord(state=persisted, paused=persisted.awaiting_human_review, done=persisted.status == "complete")
+        RUNS[thread_id] = record
     if patch:
         record.state.human_patch.update(patch)
     if not record.task or record.task.done():
@@ -142,7 +197,17 @@ async def resume_run(thread_id: str, patch: dict[str, Any] | None = None) -> Sta
 
 def get_run_state(thread_id: str) -> StartupState | None:
     record = RUNS.get(thread_id)
-    return record.state if record else None
+    if record:
+        return record.state
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return None
+    if loop.is_running():
+        # Best-effort sync helper is intentionally in-memory only; callers that
+        # need persisted state after restart should use resume_run().
+        return None
+    return None
 
 
 async def get_next_event(thread_id: str) -> dict[str, Any]:

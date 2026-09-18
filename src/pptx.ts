@@ -6,6 +6,7 @@ export async function downloadPitchDeckPptx(state: unknown, filename: string) {
   // Build the payload — send thread_id as a fallback so the backend
   // can look up the state from its own store when the full state is too large
   const payload: Record<string, unknown> = {};
+  payload.prefer_local_flux = true;
   if (stateObj && Object.keys(stateObj).length > 0) {
     payload.state = stateObj;
   }

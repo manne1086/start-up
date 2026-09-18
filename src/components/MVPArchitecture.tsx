@@ -1,7 +1,7 @@
 import { Cpu, Layers3, Play, Rocket, Server, Sparkles, Database, GitBranch } from 'lucide-react';
 import GlobalNavbar from './GlobalNavbar';
-import MermaidDiagram from './MermaidDiagram';
-import { architectureToMermaid } from './architectureToMermaid';
+import ArchitectureD2Hybrid from './ArchitectureD2Hybrid';
+import RoadmapDiagram from './RoadmapDiagram';
 import type { ArchitectureModel } from './architecture-types';
 import { useGeneration } from '../generation';
 import { buildVisualizationData } from '../visualizationData';
@@ -37,6 +37,7 @@ export default function MVPArchitecture() {
         estimated_cost_inr?: string;
         recommended_stack?: Array<{ technology?: string; rationale?: string }>;
         architecture_diagram?: string;
+        roadmap_phases?: Array<{ phase?: number; title?: string; weeks?: string; tasks?: string[] }>;
       }
     | null
     | undefined;
@@ -44,13 +45,22 @@ export default function MVPArchitecture() {
   const architecture = vizData.architecture;
   const stack = mvp?.recommended_stack ?? [];
   const techStack = vizData.recommendedTechStack;
-
-  // Prefer the AI-generated Mermaid diagram when available. Fall back to the
-  // stack-derived diagram when the agent hasn't produced one, or if it's obviously
-  // truncated (< 3 lines).
-  const agentMermaid = (mvp?.architecture_diagram ?? '').trim();
-  const isRichAgentDiagram = agentMermaid.split('\n').length >= 4 && /flowchart|graph/i.test(agentMermaid);
-  const mermaidCode = isRichAgentDiagram ? agentMermaid : architectureToMermaid(architecture);
+  const technologies = (
+    stack.length > 0
+      ? stack.map((s) => String(s.technology ?? '')).filter(Boolean)
+      : architecture.nodes.map((n) => n.label)
+  ).slice(0, 10);
+  // Roadmap phases straight from the agent; fall back to the derived roadmap
+  // so the diagram still renders before a run has produced real phases.
+  const roadmapPhases =
+    mvp?.roadmap_phases && mvp.roadmap_phases.length > 0
+      ? mvp.roadmap_phases
+      : vizData.mvpRoadmap.map((p) => ({
+          phase: p.phase,
+          title: p.title,
+          weeks: `Weeks ${p.startWeek}-${p.endWeek}`,
+          tasks: p.tasks,
+        }));
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-[#F0F0F0]">
@@ -134,16 +144,16 @@ export default function MVPArchitecture() {
               <GitBranch className="h-4 w-4 text-[#00D4AA]" />
               System Architecture Roadmap
             </div>
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest">
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#00D4AA]" /> Frontend</span>
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#6C47FF]" /> Backend</span>
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#FF6B9D]" /> AI</span>
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#FFB800]" /> Data</span>
-            </div>
           </div>
-          <div className="rounded-2xl border-2 border-[#6C47FF]/20 bg-gradient-to-br from-[#0A0A14] to-[#0D0D18] p-8">
-            <MermaidDiagram code={mermaidCode} />
+          <ArchitectureD2Hybrid architecture={architecture as ArchitectureModel} technologies={technologies} />
+        </section>
+
+        <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#111118] via-[#0F0F18] to-[#111118] p-6 shadow-[0_20px_60px_rgba(108,71,255,0.15)]">
+          <div className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.3em] text-white">
+            <Rocket className="h-4 w-4 text-[#FFB800]" />
+            Development Roadmap
           </div>
+          <RoadmapDiagram phases={roadmapPhases} />
         </section>
 
         <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">

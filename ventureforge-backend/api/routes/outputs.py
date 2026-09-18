@@ -49,9 +49,10 @@ async def generate_pptx(payload: dict):
     pitch_deck = state.get("pitch_deck") or {}
 
     buffer = None
+    prefer_local_flux = bool(payload.get("prefer_local_flux"))
 
     presenton_url = pitch_deck.get("presenton_download_url")
-    if presenton_url:
+    if presenton_url and not prefer_local_flux:
         try:
             file_response = httpx.get(presenton_url, timeout=120)
             file_response.raise_for_status()
@@ -59,7 +60,7 @@ async def generate_pptx(payload: dict):
         except Exception as exc:
             print(f"[Presenton] Pre-generated download failed, regenerating: {exc}")
 
-    if buffer is None and settings.PRESENTATIONS_AI_API_KEY:
+    if buffer is None and settings.PRESENTATIONS_AI_API_KEY and not prefer_local_flux:
         try:
             buffer = generate_presentations_ai_pptx(state)
         except Exception as exc:

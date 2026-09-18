@@ -12,26 +12,28 @@ from graph.state import AgentLog, StartupState
 
 # Groq's recommended replacement for the deprecated Llama 3.3 70B model.
 # GPT-OSS 120B supports the same 131K-token context-window class.
-MODEL_NAME = settings.GROQ_MODEL or "openai/gpt-oss-120b"
+MODEL_NAME = settings.GROQ_REASONING_MODEL or settings.GROQ_MODEL or "openai/gpt-oss-120b"
+FAST_MODEL_NAME = settings.GROQ_FAST_MODEL or "openai/gpt-oss-20b"
+VALIDATOR_MODEL_NAME = settings.GROQ_VALIDATOR_MODEL or FAST_MODEL_NAME
 
 reasoning_llm = ChatGroq(
     model=MODEL_NAME,
     temperature=0.3,
-    max_tokens=8192,
+    max_tokens=4096,
     api_key=settings.GROQ_API_KEY,
 )
 
 code_llm = ChatGroq(
-    model=MODEL_NAME,
+    model=FAST_MODEL_NAME,
     temperature=0.3,
-    max_tokens=8192,
+    max_tokens=4096,
     api_key=settings.GROQ_API_KEY,
 )
 
 validator_llm = ChatGroq(
-    model=MODEL_NAME,
+    model=VALIDATOR_MODEL_NAME,
     temperature=0.2,
-    max_tokens=4096,
+    max_tokens=2048,
     api_key=settings.GROQ_API_KEY,
 )
 

@@ -41,6 +41,17 @@ async def init_database() -> None:
                 )
                 """
             )
+            await conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS ventureforge_run_states (
+                    thread_id TEXT PRIMARY KEY,
+                    state JSONB NOT NULL,
+                    paused BOOLEAN NOT NULL DEFAULT FALSE,
+                    done BOOLEAN NOT NULL DEFAULT FALSE,
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+                """
+            )
             await _init_idea_board_schema(conn)
 
 

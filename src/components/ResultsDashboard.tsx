@@ -26,6 +26,7 @@ import {
 import JSZip from 'jszip';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import GlobalNavbar from './GlobalNavbar';
+import ExecutiveBriefing, { type Briefing } from './ExecutiveBriefing';
 import { useGeneration } from '../generation';
 import { useRouter } from '../router';
 import { buildVisualizationData } from '../visualizationData';
@@ -43,7 +44,14 @@ export default function ResultsDashboard() {
   const [toastMsg, setToastMsg] = useState('');
 
   const ideaName = backendState?.startup_name || backendState?.idea?.toString()?.slice(0, 32) || 'Startup';
-  const market = backendState?.market as Record<string, unknown> | null | undefined;
+  const market = backendState?.market as {
+    tam?: string;
+    tam_source?: string;
+    competitors?: Array<Record<string, unknown>>;
+    opportunity_score?: number;
+    growth_rate?: number;
+    competitive_intensity?: string;
+  } | null | undefined;
   const financials = backendState?.financials as {
     projections?: Array<Record<string, unknown>>;
     npv?: number;
@@ -208,7 +216,7 @@ export default function ResultsDashboard() {
   const progressPercent = Math.round((completedCount / statusItems.length) * 100);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-[#F0F0F0] flex flex-col font-sans pb-12">
+    <div className="min-h-screen bg-[#08080D] text-[#F0F0F0] flex flex-col font-sans pb-12 dashboard-shell">
       <GlobalNavbar />
 
       {/* ── Toast ── */}
@@ -223,7 +231,7 @@ export default function ResultsDashboard() {
       )}
 
       {/* ── Status bar ── */}
-      <div className="w-full bg-[#111118] border-b border-[#1E1E28] py-3 px-6 flex items-center gap-6 overflow-x-auto custom-scrollbar shrink-0 animate-fadeInDown">
+      <div className="w-full glass border-x-0 border-t-0 border-b-white/[0.08] py-3 px-6 flex items-center gap-6 overflow-x-auto custom-scrollbar shrink-0 animate-fadeInDown">
         {statusItems.map(([label, value], i) => (
           <div key={String(label)} className="flex items-center gap-2 shrink-0 animate-fadeInLeft" style={{ animationDelay: `${i * 100}ms` }}>
             <CheckCircle2 className={`w-4 h-4 ${value ? 'text-[#00D4AA]' : 'text-[#888899]'}`} />
@@ -244,7 +252,8 @@ export default function ResultsDashboard() {
         <div className="mb-12 animate-fadeInUp">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
             <div>
-              <h1 className="text-4xl md:text-5xl font-black text-white mb-2 tracking-tight">
+              <div className="flex items-center gap-3 mb-3"><span className="live-orb" /><span className="text-[11px] font-black uppercase tracking-[0.28em] text-[#00D4AA]">Investment workspace</span></div>
+              <h1 className="text-4xl md:text-6xl font-black text-white mb-3 tracking-[-0.05em]">
                 {ideaName}
               </h1>
               <p className="text-base text-[#E0E0EE] font-medium">
@@ -257,45 +266,48 @@ export default function ResultsDashboard() {
           </div>
         </div>
 
+        {/* ── Plain-English briefing (leads the page) ── */}
+        <ExecutiveBriefing briefing={backendState?.briefing as Briefing | undefined} />
+
         {/* ── Key Metrics Section ── */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12 animate-fadeInUp" style={{ animationDelay: '50ms' }}>
           {[
             {
               icon: Globe,
-              label: 'Market Size (TAM)',
+              label: 'Total market each year',
               value: market?.tam?.toString() ?? '—',
-              subtext: 'Total Addressable',
+              subtext: 'What everyone spends (TAM)',
               accentColor: '#00D4AA',
               trend: '↑'
             },
             {
               icon: Target,
-              label: 'Opportunity Score',
+              label: 'How good the opening looks',
               value: market?.opportunity_score ? `${market.opportunity_score}%` : '—',
-              subtext: 'Market fit index',
+              subtext: 'Higher is better',
               accentColor: '#6C47FF',
               trend: '↑'
             },
             {
               icon: BarChart3,
-              label: 'Market Growth',
+              label: 'How fast it is growing',
               value: market?.growth_rate ? `${market.growth_rate}%` : '—',
-              subtext: 'YoY expansion',
+              subtext: 'Per year',
               accentColor: '#00D4AA',
               trend: market?.growth_rate && market.growth_rate > 0 ? '↑' : '→'
             },
             {
               icon: Zap,
-              label: 'Competitive Intensity',
+              label: 'How crowded it is',
               value: market?.competitive_intensity ? market.competitive_intensity.charAt(0).toUpperCase() + market.competitive_intensity.slice(1) : '—',
-              subtext: 'Market saturation',
+              subtext: 'Number of rivals',
               accentColor: '#FFB800',
               trend: '='
             },
           ].map(({ icon: Icon, label, value, subtext, accentColor, trend }, i) => (
             <div
               key={label}
-              className="bg-[#111118] rounded-2xl p-5 border border-white/[0.06] hover:border-white/[0.12] transition-all group animate-fadeInUp"
+              className="bg-[#111118]/90 rounded-2xl p-5 border border-white/[0.06] hover:border-white/[0.16] transition-all group card-hover animate-fadeInUp"
               style={{
                 animationDelay: `${100 + i * 50}ms`,
                 borderLeftWidth: '3px',

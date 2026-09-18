@@ -88,6 +88,19 @@ const GenerationContext = createContext<GenerationContextType>({
   getRecentRuns: () => [],
 });
 
+// FastAPI errors arrive as {"detail": "..."} — surface that sentence rather
+// than dumping the raw JSON body into the UI.
+async function readApiError(response: Response): Promise<string> {
+  const raw = await response.text();
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed?.detail === 'string') return parsed.detail;
+  } catch {
+    /* not JSON — fall through to the raw body */
+  }
+  return raw || `Request failed (${response.status})`;
+}
+
 function parseRunStatus(s: unknown): RunStatus {
   if (s === 'running' || s === 'paused' || s === 'complete' || s === 'failed') return s;
   return 'idle';
@@ -384,7 +397,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
     });
 
     if (!response.ok) {
-      throw new Error(await response.text());
+      throw new Error(await readApiError(response));
     }
 
     const data = await response.json() as { state?: GenerationState };
@@ -405,7 +418,7 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
     });
 
     if (!response.ok) {
-      throw new Error(await response.text());
+      throw new Error(await readApiError(response));
     }
 
     const data = await response.json() as { state?: GenerationState };

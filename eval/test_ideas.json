@@ -1,0 +1,93 @@
+[
+  {
+    "id": "idea_01",
+    "domain": "consumer_subscription",
+    "idea_text": "A subscription-based meal planning app for busy parents that turns dietary preferences, grocery budgets, and school lunch constraints into weekly shopping lists and kid-friendly recipes."
+  },
+  {
+    "id": "idea_02",
+    "domain": "b2b_saas",
+    "idea_text": "A B2B SaaS platform for small manufacturers that predicts equipment downtime from maintenance logs, operator notes, and inexpensive sensor data, then recommends preventive actions."
+  },
+  {
+    "id": "idea_03",
+    "domain": "marketplace",
+    "idea_text": "A marketplace that connects independent elder-care aides with families needing part-time in-home support, with scheduling, background checks, and recurring payments built in."
+  },
+  {
+    "id": "idea_04",
+    "domain": "fintech",
+    "idea_text": "A cash-flow forecasting and invoice financing tool for micro-businesses that flags short-term liquidity gaps and offers credit offers based on real-time transaction data."
+  },
+  {
+    "id": "idea_05",
+    "domain": "healthtech",
+    "idea_text": "A remote recovery companion for post-surgery patients that combines symptom check-ins, medication reminders, and clinician alerts to reduce avoidable readmissions."
+  },
+  {
+    "id": "idea_06",
+    "domain": "climate_hardware",
+    "idea_text": "A low-cost smart irrigation controller for small farms that uses weather forecasts, soil moisture readings, and crop stage to reduce water waste without requiring full farm automation."
+  },
+  {
+    "id": "idea_07",
+    "domain": "consumer_subscription",
+    "idea_text": "A personalized skincare subscription that builds routines from skin type, climate, and seasonal changes, then ships a simplified set of products each month."
+  },
+  {
+    "id": "idea_08",
+    "domain": "b2b_saas",
+    "idea_text": "An AI compliance assistant for seed-stage startups that tracks contracts, policy changes, and data-processing obligations, then generates action lists for the founder."
+  },
+  {
+    "id": "idea_09",
+    "domain": "marketplace",
+    "idea_text": "A vetted marketplace for on-demand event staff that helps venue operators quickly book servers, bartenders, and setup crews with reliable ratings and shift replacement support."
+  },
+  {
+    "id": "idea_10",
+    "domain": "fintech",
+    "idea_text": "A remittance app for immigrant workers that offers lower-fee transfers, better exchange-rate transparency, and goal-based savings wallets for family support."
+  },
+  {
+    "id": "idea_11",
+    "domain": "healthtech",
+    "idea_text": "A digital triage tool for small clinics that guides patients to the right care path before appointments, reducing no-shows and helping staff prioritize urgent cases."
+  },
+  {
+    "id": "idea_12",
+    "domain": "climate_hardware",
+    "idea_text": "A plug-and-play energy monitor for apartment buildings that detects waste, identifies faulty appliances, and helps property managers cut utility bills without major retrofits."
+  },
+  {
+    "id": "idea_13",
+    "domain": "consumer_subscription",
+    "idea_text": "A subscription service that curates locally made snacks for office teams, adapting boxes by dietary restrictions, office size, and preferred delivery cadence."
+  },
+  {
+    "id": "idea_14",
+    "domain": "b2b_saas",
+    "idea_text": "A sales enablement workspace for small agencies that captures client context, proposal templates, and follow-up tasks in one place to shorten deal cycles."
+  },
+  {
+    "id": "idea_15",
+    "domain": "marketplace",
+    "idea_text": "A platform for matching freelance tutors with parents looking for after-school academic support, with lesson tracking, scheduling, and milestone-based payments."
+  },
+  {
+    "id": "idea_16",
+    "domain": "fintech",
+    "idea_text": "A bookkeeping and tax-estimate app for solo creators that auto-categorizes income, reserves taxes, and nudges users before cash-flow surprises hit."
+  },
+  {
+    "id": "idea_17",
+    "domain": "healthtech",
+    "idea_text": "A mental wellness companion for college students that blends habit tracking, peer support circles, and campus-resource routing with privacy-first defaults."
+  },
+  {
+    "id": "idea_18",
+    "domain": "climate_hardware",
+    "idea_text": "A retrofit air-quality sensor kit for restaurants that tracks ventilation, occupancy, and filter health to improve indoor air safety and operational efficiency."
+  }
+]
+

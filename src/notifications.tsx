@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { useAuth } from './auth';
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
@@ -32,6 +33,7 @@ const NotificationsContext = createContext<NotificationsContextType>({
 });
 
 export function NotificationsProvider({ children }: { children: React.ReactNode }) {
+  const { authenticated } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -99,13 +101,19 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     }
   }, []);
 
+  // Only poll while signed in. The endpoint is session-authenticated, so
+  // polling when logged out just produced a 401 every 10 seconds.
   useEffect(() => {
+    if (!authenticated) {
+      setUnreadCount(0);
+      return;
+    }
     void fetchUnreadCount();
     const interval = setInterval(() => {
       void fetchUnreadCount();
     }, 10000); // Poll every 10 seconds
     return () => clearInterval(interval);
-  }, [fetchUnreadCount]);
+  }, [fetchUnreadCount, authenticated]);
 
   return (
     <NotificationsContext.Provider

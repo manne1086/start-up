@@ -17,6 +17,7 @@ from api.routes.outputs import router as outputs_router
 from api.routes.projects import router as projects_router
 from api.routes.review import router as review_router
 from api.routes.assistant import router as assistant_router
+from api.routes.images import router as images_router
 from routers.community import router as community_router
 from routers.notifications import router as notifications_router
 from routers.users import router as users_router
@@ -57,6 +58,7 @@ app.include_router(generate_router, prefix="/api")
 app.include_router(projects_router, prefix="/api")
 app.include_router(review_router, prefix="/api")
 app.include_router(assistant_router, prefix="/api")
+app.include_router(images_router, prefix="/api")
 app.include_router(outputs_router, prefix="/api")
 app.include_router(community_router, prefix="/api")
 app.include_router(notifications_router, prefix="/api")

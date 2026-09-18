@@ -13,7 +13,9 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from services.groq_client import reasoning_llm
+from services.groq_client import FAST_MODEL_NAME
+from langchain_groq import ChatGroq
+from core.config import settings
 from services.run_manager import get_run_state
 
 router = APIRouter()
@@ -75,7 +77,10 @@ def _build_context(state: Any) -> str:
         legal = state.legal.model_dump() if hasattr(state.legal, "model_dump") else state.legal
         ctx["legal"] = legal
 
-    return json.dumps(ctx, indent=2, default=str)
+    # Keep interactive assistant requests well below Groq's organization TPM
+    # limit. The full state remains available to the pipeline; this endpoint
+    # only needs the fields useful for founder questions.
+    return json.dumps(ctx, separators=(",", ":"), default=str)[:12000]
 
 
 SYSTEM_PROMPT = """You are the VentureForge Research Assistant — an expert advisor helping a founder
@@ -109,13 +114,19 @@ async def ask_assistant(payload: AssistantQuery):
 
     # Build conversation
     messages = [{"role": "system", "content": system}]
-    for msg in payload.history[-8:]:  # keep last 8 turns
+    for msg in payload.history[-4:]:  # keep the interactive request small
         if msg.get("role") in ("user", "assistant") and msg.get("content"):
-            messages.append({"role": msg["role"], "content": msg["content"]})
-    messages.append({"role": "user", "content": payload.question})
+            messages.append({"role": msg["role"], "content": msg["content"][-1200:]})
+    messages.append({"role": "user", "content": payload.question[-2000:]})
 
     try:
-        response = await reasoning_llm.ainvoke(messages)
+        assistant_llm = ChatGroq(
+            model=FAST_MODEL_NAME,
+            temperature=0.2,
+            max_tokens=1200,
+            api_key=settings.GROQ_API_KEY,
+        )
+        response = await assistant_llm.ainvoke(messages)
         answer = response.content if hasattr(response, "content") else str(response)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Assistant failed: {exc}")

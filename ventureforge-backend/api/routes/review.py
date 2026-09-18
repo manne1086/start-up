@@ -1,8 +1,13 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
-from services.run_manager import get_run_state, resume_run
+from services.run_manager import RunNotFoundError, get_run_state, resume_run
 
 router = APIRouter()
+
+RUN_LOST_DETAIL = (
+    "This run is no longer active — the server restarted while it was paused. "
+    "Paused runs are held in memory, so the analysis needs to be started again."
+)
 
 
 @router.get("/review/{thread_id}")
@@ -23,13 +28,23 @@ async def get_review(thread_id: str):
 @router.post("/review/approve")
 async def approve(payload: dict):
     thread_id = payload.get("thread_id")
-    state = await resume_run(thread_id)
+    if not thread_id:
+        raise HTTPException(status_code=400, detail="thread_id is required.")
+    try:
+        state = await resume_run(thread_id)
+    except RunNotFoundError:
+        raise HTTPException(status_code=404, detail=RUN_LOST_DETAIL)
     return {"thread_id": thread_id, "approved": True, "state": state.model_dump(mode="json")}
 
 
 @router.post("/review/patch")
 async def patch(payload: dict):
     thread_id = payload.get("thread_id")
+    if not thread_id:
+        raise HTTPException(status_code=400, detail="thread_id is required.")
     patch_data = payload.get("patch", {})
-    state = await resume_run(thread_id, patch_data)
+    try:
+        state = await resume_run(thread_id, patch_data)
+    except RunNotFoundError:
+        raise HTTPException(status_code=404, detail=RUN_LOST_DETAIL)
     return {"thread_id": thread_id, "patched": patch_data, "state": state.model_dump(mode="json")}

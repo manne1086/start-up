@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "openai/gpt-oss-120b"
+    GROQ_REASONING_MODEL: str = ""
+    GROQ_FAST_MODEL: str = "openai/gpt-oss-20b"
+    GROQ_VALIDATOR_MODEL: str = "openai/gpt-oss-20b"
     TAVILY_API_KEY: str = ""
     # Image generation (Hugging Face Inference API). HF_TOKEN is accepted as an
     # alias so the service also works with the conventional variable name.

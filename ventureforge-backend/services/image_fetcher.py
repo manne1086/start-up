@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import asyncio
-from io import BytesIO
+from pathlib import Path
 from typing import Any
 
 import httpx
 
 from core.config import settings
+from services.image_service import IMAGES_DIR, image_generator
 
 _cache: dict[str, bytes] = {}
 
@@ -21,6 +22,58 @@ SLIDE_IMAGE_QUERIES: dict[str, str] = {
     "competitor": "competitive business analysis",
     "risks": "risk management strategy corporate",
 }
+
+FLUX_SLIDE_TOPICS: dict[str, str] = {
+    "cover": "premium investor pitch deck cover background, cinematic startup technology brand world, abstract product ecosystem, dark clean presentation canvas",
+    "executive_summary": "executive strategy presentation background, refined business operating system, subtle dashboards and decision pathways, dark premium visual design",
+    "market": "market opportunity presentation background, abstract growth funnel and expanding data landscape, investor-grade, clean open space for charts",
+    "architecture": "software architecture presentation background, cloud infrastructure layers, subtle connected systems, clean technical blueprint atmosphere",
+    "tech_stack": "modern engineering stack presentation background, abstract code modules and product infrastructure, polished enterprise technology aesthetic",
+    "financial": "financial growth presentation background, subtle revenue curve, investment analytics, premium dark boardroom data visual atmosphere",
+    "roadmap": "product roadmap presentation background, abstract milestone path and launch timeline, clean investor deck style with open content space",
+    "competitor": "competitive landscape presentation background, abstract market positioning grid and strategic comparison field, polished business design",
+    "risks": "risk and mitigation presentation background, abstract safeguards, compliance signals and operational resilience, clean premium pitch deck style",
+}
+
+
+def _generated_image_bytes(local_path: str | None, image_url: str | None) -> bytes | None:
+    candidates: list[Path] = []
+    if local_path:
+        candidates.append(Path(__file__).resolve().parents[1] / local_path)
+    if image_url:
+        candidates.append(IMAGES_DIR / Path(image_url).name)
+
+    for path in candidates:
+        try:
+            resolved = path.resolve()
+            if resolved.is_file() and str(resolved).startswith(str(IMAGES_DIR.resolve())):
+                return resolved.read_bytes()
+        except Exception:
+            continue
+    return None
+
+
+async def generate_flux_slide_background(slide_key: str, idea: str = "") -> bytes | None:
+    if not image_generator.provider.is_configured:
+        return None
+
+    base_topic = FLUX_SLIDE_TOPICS.get(slide_key, "premium investor pitch deck background")
+    idea_context = f" for startup idea: {idea[:120]}" if idea else ""
+    topic = (
+        f"{base_topic}{idea_context}. "
+        "No words, no typography, no numbers, no logos, no watermarks. "
+        "Leave generous negative space for real slide text and charts."
+    )
+
+    try:
+        result = await image_generator.generate_slide_background(topic, use_cache=True)
+        if not result.success:
+            print(f"[ImageFetcher] Flux background failed for '{slide_key}': {result.error}")
+            return None
+        return _generated_image_bytes(result.local_path, result.image_url)
+    except Exception as exc:
+        print(f"[ImageFetcher] Flux background failed for '{slide_key}': {exc}")
+        return None
 
 
 async def fetch_unsplash_image(
@@ -68,13 +121,14 @@ async def fetch_slide_images(
 ) -> dict[str, bytes]:
     images: dict[str, bytes] = {}
 
-    if not settings.UNSPLASH_ACCESS_KEY:
-        return images
-
     idea_suffix = f" {idea[:30]}" if idea else ""
+    flux_semaphore = asyncio.Semaphore(2)
 
     async def _fetch(slide_key: str, query: str):
-        data = await fetch_unsplash_image(query + idea_suffix)
+        async with flux_semaphore:
+            data = await generate_flux_slide_background(slide_key, idea)
+        if not data and settings.UNSPLASH_ACCESS_KEY:
+            data = await fetch_unsplash_image(query + idea_suffix)
         if data:
             images[slide_key] = data
 

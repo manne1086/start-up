@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowBigUp, MessageSquare, Users, CheckCircle2, Clock, ArrowRight, Shield, Trash2 } from 'lucide-react';

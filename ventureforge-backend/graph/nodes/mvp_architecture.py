@@ -7,98 +7,40 @@ async def mvp_architecture(state: StartupState) -> StartupState:
     prompt = f"""
 You are the VentureForge MVP architecture agent.
 
-Design a REAL, tailored MVP architecture for THIS specific startup idea. Do NOT
-default to a generic ReactJS/NodeJS/MongoDB three-node diagram. Instead, pick a
-stack and topology that ACTUALLY fits the idea — including AI services, caches,
-queues, external APIs, mobile clients, edge functions, or whatever the idea
-truly needs.
+Design a real, tailored MVP architecture for this startup idea. Do not default
+to a generic React/Node/MongoDB diagram. Pick a stack and topology that fits
+the idea, including AI services, caches, queues, external APIs, mobile clients,
+edge functions, or whatever the idea truly needs.
 
 Idea: {state.idea}
 Industry: {state.industry or 'General'}
 Business plan: {state.business_plan.model_dump_json(indent=2) if state.business_plan else '{}'}
 Financials: {state.financials.model_dump_json(indent=2) if state.financials else '{}'}
 
-Return a complete MVPData object. Critical field:
+Return a complete MVPData object.
 
-`architecture_diagram` — Valid Mermaid `flowchart LR` syntax that produces a
-rich, multi-layer architecture diagram with 8-14 nodes across subgraphs.
+Critical field: architecture_diagram
 
-REQUIREMENTS for architecture_diagram:
-- Start with: `flowchart LR`
-- Group nodes into 3-5 subgraphs by layer (e.g. Client, Frontend, Backend, AI,
-  Data, External, Infra) — choose layers that fit the idea.
-- Use node shapes to convey type:
-  * `["Label"]` — rectangles for services/APIs
-  * `(["Label"])` — stadium for UI/frontend
-  * `{{"Label"}}` — hexagons for AI/LLM/agents
-  * `[("Label")]` — cylinders for databases/storage
-  * `(("Label"))` — circles for users/external systems
-- Include edge labels describing the interaction (e.g. `-->|GraphQL|`, `-->|Publish|`, `-->|Prompt|`).
-- ALWAYS apply these colorful classDef styles at the top and assign each node to one class:
-    classDef ui       fill:#00D4AA,stroke:#00FFCC,stroke-width:3px,color:#0A0A0F,font-weight:bold
-    classDef backend  fill:#6C47FF,stroke:#9B7DFF,stroke-width:3px,color:#FFFFFF,font-weight:bold
-    classDef ai       fill:#FF6B9D,stroke:#FF8FB6,stroke-width:3px,color:#FFFFFF,font-weight:bold
-    classDef data     fill:#FFB800,stroke:#FFCC33,stroke-width:3px,color:#0A0A0F,font-weight:bold
-    classDef external fill:#4EA8DE,stroke:#7CC0EB,stroke-width:3px,color:#FFFFFF,font-weight:bold
-    classDef cache    fill:#F76F53,stroke:#FF8F70,stroke-width:3px,color:#FFFFFF,font-weight:bold
-    classDef queue    fill:#B47AEA,stroke:#CB9CF5,stroke-width:3px,color:#FFFFFF,font-weight:bold
-  Then use `class NodeId classname` for each node.
-- Node IDs must be alphanumeric + underscores only, no spaces or special chars.
-- Do NOT wrap the diagram in triple backticks or markdown fences — return raw Mermaid syntax only.
+architecture_diagram must be valid D2 syntax using ONLY simple directed edges.
 
-EXAMPLE structure (for a food delivery app — DO NOT copy verbatim, tailor to the actual idea):
+Rules:
+- Use only lines in the form source_id -> target_id.
+- Node IDs must use lowercase letters, numbers, and underscores only.
+- Do not include node declarations.
+- Do not include labels.
+- Do not include containers.
+- Do not include braces, quotes, colons, or style blocks.
+- Include 6-12 edges that represent the real architecture flow.
+- Return raw D2 syntax only, with no markdown fences.
 
-flowchart LR
-  classDef ui       fill:#00D4AA,stroke:#00FFCC,stroke-width:3px,color:#0A0A0F,font-weight:bold
-  classDef backend  fill:#6C47FF,stroke:#9B7DFF,stroke-width:3px,color:#FFFFFF,font-weight:bold
-  classDef ai       fill:#FF6B9D,stroke:#FF8FB6,stroke-width:3px,color:#FFFFFF,font-weight:bold
-  classDef data     fill:#FFB800,stroke:#FFCC33,stroke-width:3px,color:#0A0A0F,font-weight:bold
-  classDef external fill:#4EA8DE,stroke:#7CC0EB,stroke-width:3px,color:#FFFFFF,font-weight:bold
-  classDef cache    fill:#F76F53,stroke:#FF8F70,stroke-width:3px,color:#FFFFFF,font-weight:bold
-  classDef queue    fill:#B47AEA,stroke:#CB9CF5,stroke-width:3px,color:#FFFFFF,font-weight:bold
+Example:
 
-  subgraph Client["Client Apps"]
-    MobileApp(["React Native App"])
-    WebApp(["Next.js Web"])
-  end
-  subgraph API["Backend Services"]
-    Gateway["API Gateway"]
-    OrderSvc["Order Service"]
-    UserSvc["User Service"]
-  end
-  subgraph AI["AI Layer"]
-    Recommender{{"Recommender Engine"}}
-    LLM{{"GPT-4 Assistant"}}
-  end
-  subgraph Data["Data Layer"]
-    PG[("PostgreSQL")]
-    RedisCache[("Redis Cache")]
-    Events[("Kafka Events")]
-  end
-  subgraph External["External Services"]
-    Stripe(("Stripe"))
-    Maps(("Google Maps"))
-  end
-
-  MobileApp -->|REST| Gateway
-  WebApp -->|GraphQL| Gateway
-  Gateway --> OrderSvc
-  Gateway --> UserSvc
-  OrderSvc -->|Prompt| Recommender
-  Recommender --> LLM
-  OrderSvc -->|Read/Write| PG
-  UserSvc -->|Sessions| RedisCache
-  OrderSvc -->|Publish| Events
-  OrderSvc -->|Charge| Stripe
-  Gateway -->|Geocode| Maps
-
-  class MobileApp,WebApp ui
-  class Gateway,OrderSvc,UserSvc backend
-  class Recommender,LLM ai
-  class PG data
-  class RedisCache cache
-  class Events queue
-  class Stripe,Maps external
+web_app -> api_gateway
+mobile_app -> api_gateway
+api_gateway -> core_service
+core_service -> postgres
+core_service -> redis
+core_service -> llm_api
 
 Now generate the tailored MVPData for the given idea.
 """
@@ -108,18 +50,16 @@ Now generate the tailored MVPData for the given idea.
         await log_event(state, AgentLog(agent="MVP Architecture", message=f"Structured generation failed, using fallback: {exc}", status="warning"))
         mvp = MVPData(
             recommended_stack=[StackItem(layer="Backend", technology="FastAPI", reason="Async API", complexity="Low")],
-            architecture_diagram="flowchart LR\n  A([Frontend]) --> B[API] --> C[(Database)]",
+            architecture_diagram="frontend -> api\napi -> database",
             roadmap_phases=[RoadmapPhase(phase=1, title="Prototype", weeks="1-2", tasks=["API scaffold"])],
             estimated_weeks=6,
-            estimated_cost_inr="₹2,50,000",
+            estimated_cost_inr="INR 2,50,000",
             team_size=3,
         )
 
-    # Strip any accidental markdown fencing the LLM might add
     if mvp.architecture_diagram:
         cleaned = mvp.architecture_diagram.strip()
         if cleaned.startswith("```"):
-            # Remove leading ```mermaid or ```
             cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else cleaned
             cleaned = cleaned.rstrip("`").rstrip()
             if cleaned.endswith("```"):

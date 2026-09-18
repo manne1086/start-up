@@ -11,8 +11,12 @@ coverage/
 ventureforge-backend/myenv/
 ventureforge-backend/**/__pycache__/
 ventureforge-backend/**/*.py[cod]
+**/__pycache__/
 ventureforge-backend/.pytest_cache/
 ventureforge-backend/.mypy_cache/
 ventureforge-backend/.ruff_cache/
 ventureforge-backend/data/
 .claude/.last-update-commit
+
+# Generated images (regenerable, cached by prompt hash)
+ventureforge-backend/generated_images/

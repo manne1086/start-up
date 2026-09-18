@@ -1,3 +1,4 @@
+from graph.nodes.briefing import briefing
 from graph.nodes.business_planning import business_planning
 from graph.nodes.financial_engineering import financial_engineering
 from graph.nodes.legal_compliance import legal_compliance
@@ -40,6 +41,7 @@ try:
     workflow.add_node("pitch_deck", pitch_deck)
     workflow.add_node("mvp_architecture", mvp_architecture)
     workflow.add_node("pivot_simulator", pivot_simulator)
+    workflow.add_node("briefing", briefing)
 
     workflow.set_entry_point("orchestrator")
     workflow.add_edge("orchestrator", "market_research")
@@ -57,7 +59,8 @@ try:
     workflow.add_edge("legal_compliance", "pitch_deck")
     workflow.add_edge("pitch_deck", "mvp_architecture")
     workflow.add_edge("mvp_architecture", "pivot_simulator")
-    workflow.add_edge("pivot_simulator", END)
+    workflow.add_edge("pivot_simulator", "briefing")
+    workflow.add_edge("briefing", END)
 except ModuleNotFoundError:
     workflow = None
 

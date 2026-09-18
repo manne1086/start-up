@@ -152,6 +152,44 @@ class PivotOption(BaseModel):
     adjusted_tam: str
 
 
+class GlossaryTerm(BaseModel):
+    """A jargon term explained in the context of THIS specific startup."""
+    term: str
+    plain_meaning: str          # what it means in everyday words
+    why_it_matters: str         # why the founder should care
+    this_startup: str = ""      # the actual value/answer for this venture
+
+
+class ScoreCard(BaseModel):
+    """A single judgement, expressed the way an investor would say it out loud."""
+    label: str                  # "Market Size", "Competition", ...
+    verdict: str                # "Strong", "Crowded", "Needs work"
+    score: int                  # 0-100
+    plain_english: str          # one sentence, no jargon
+    evidence: str = ""          # the number/fact behind the judgement
+
+
+class ExecutiveBriefing(BaseModel):
+    """
+    The plain-English translation layer over the whole pipeline.
+
+    Everything a non-technical founder needs to understand their own venture
+    brief without looking up a single acronym.
+    """
+    headline: str                            # one-line verdict on the venture
+    verdict: Literal["promising", "mixed", "challenging"] = "mixed"
+    confidence: int = 50                     # 0-100, how sure the analysis is
+    elevator_pitch: str = ""                 # 2 sentences, how to describe it at a party
+    what_you_are_building: str = ""          # plain restatement of the idea
+    who_pays_and_why: str = ""               # customer + motivation, no jargon
+    how_you_make_money: str = ""             # revenue model in plain words
+    scorecards: list[ScoreCard] = []         # 4-6 dimensions judged
+    biggest_strengths: list[str] = []        # 3 concrete strengths
+    biggest_risks: list[str] = []            # 3 concrete risks
+    do_this_next: list[str] = []             # 3-5 concrete next actions
+    glossary: list[GlossaryTerm] = []        # every acronym used, explained
+
+
 class StartupState(BaseModel):
     thread_id: str
     user_id: str
@@ -170,6 +208,7 @@ class StartupState(BaseModel):
     pitch_deck: PitchDeckData | None = None
     mvp: MVPData | None = None
     pivots: list[PivotOption] = []
+    briefing: ExecutiveBriefing | None = None
     awaiting_human_review: bool = False
     human_approved: bool = False
     human_patch: dict = {}

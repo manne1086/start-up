@@ -1,31 +1,44 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import { AuthProvider } from './auth';
 import { NotificationsProvider } from './notifications';
 import { RouterProvider } from './router';
 import { GenerationProvider } from './generation';
-import Landing from './components/Landing';
-import Projects from './components/Projects';
-import AgentProgress from './components/AgentProgress';
-import HumanReview from './components/HumanReview';
-import ResultsDashboard from './components/ResultsDashboard';
-import FinancialModel from './components/FinancialModel';
-import PivotSimulator from './components/PivotSimulator';
-import MarketResearch from './components/MarketResearch';
-import LegalCompliance from './components/LegalCompliance';
-import PitchDeckEditor from './components/PitchDeckEditor';
-import MVPArchitecture from './components/MVPArchitecture';
-import HowItWorks from './components/HowItWorks';
-import LandingNavbar from './components/LandingNavbar';
-import NeuralBrainBackground from './components/NeuralBrainBackground';
-import Settings from './components/Settings';
-import ErrorState from './components/ErrorState';
-import ComponentLibrary from './components/ComponentLibrary';
-import Home from './components/Home';
-import AuthenticatedHome from './components/AuthenticatedHome';
 import { useAuth } from './auth';
-import IdeaFeed from './components/IdeaFeed';
-import IdeaDetail from './components/IdeaDetail';
-import UserProfile from './components/UserProfile';
+
+const Landing = lazy(() => import('./components/Landing'));
+const Projects = lazy(() => import('./components/Projects'));
+const AgentProgress = lazy(() => import('./components/AgentProgress'));
+const HumanReview = lazy(() => import('./components/HumanReview'));
+const ResultsDashboard = lazy(() => import('./components/ResultsDashboard'));
+const FinancialModel = lazy(() => import('./components/FinancialModel'));
+const PivotSimulator = lazy(() => import('./components/PivotSimulator'));
+const MarketResearch = lazy(() => import('./components/MarketResearch'));
+const LegalCompliance = lazy(() => import('./components/LegalCompliance'));
+const PitchDeckEditor = lazy(() => import('./components/PitchDeckEditor'));
+const MVPArchitecture = lazy(() => import('./components/MVPArchitecture'));
+const HowItWorks = lazy(() => import('./components/HowItWorks'));
+const LandingNavbar = lazy(() => import('./components/LandingNavbar'));
+const NeuralBrainBackground = lazy(() => import('./components/NeuralBrainBackground'));
+const Settings = lazy(() => import('./components/Settings'));
+const ErrorState = lazy(() => import('./components/ErrorState'));
+const ComponentLibrary = lazy(() => import('./components/ComponentLibrary'));
+const Home = lazy(() => import('./components/Home'));
+const AuthenticatedHome = lazy(() => import('./components/AuthenticatedHome'));
+const IdeaFeed = lazy(() => import('./components/IdeaFeed'));
+const IdeaDetail = lazy(() => import('./components/IdeaDetail'));
+const UserProfile = lazy(() => import('./components/UserProfile'));
+
+function ComponentLoadingFallback() {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[#07070C] px-6 text-[#F0F0F0]">
+      <div className="flex items-center gap-3 text-sm text-[#888899]" role="status" aria-live="polite">
+        <span className="h-2 w-2 animate-pulse rounded-full bg-[#00D4AA]" />
+        Loading workspace...
+      </div>
+    </main>
+  );
+}
 
 // Thin route wrappers that feed URL params into the community/profile
 // components (which take props rather than reading the router directly).
@@ -70,29 +83,31 @@ function LandingRoute() {
 
 function AppContent() {
   return (
-    <Routes>
-      <Route path="/" element={<LandingRoute />} />
-      <Route path="/legacy-landing" element={<Landing />} />
-      <Route path="/home" element={<HomeRoute />} />
-      <Route path="/projects" element={<Projects />} />
-      <Route path="/progress" element={<AgentProgress />} />
-      <Route path="/review" element={<HumanReview />} />
-      <Route path="/results" element={<ResultsDashboard />} />
-      <Route path="/financials" element={<FinancialModel />} />
-      <Route path="/pivot" element={<PivotSimulator />} />
-      <Route path="/market" element={<MarketResearch />} />
-      <Route path="/legal" element={<LegalCompliance />} />
-      <Route path="/pitch" element={<PitchDeckEditor />} />
-      <Route path="/mvp" element={<MVPArchitecture />} />
-      <Route path="/how-it-works" element={<HowItWorks />} />
-      <Route path="/settings" element={<Settings />} />
-      <Route path="/error" element={<ErrorState />} />
-      <Route path="/components" element={<ComponentLibrary />} />
-      <Route path="/community" element={<CommunityRoute />} />
-      <Route path="/ideas/:id" element={<IdeaDetailRoute />} />
-      <Route path="/users/:username" element={<UserProfile />} />
-      <Route path="*" element={<LandingRoute />} />
-    </Routes>
+    <Suspense fallback={<ComponentLoadingFallback />}>
+      <Routes>
+        <Route path="/" element={<LandingRoute />} />
+        <Route path="/legacy-landing" element={<Landing />} />
+        <Route path="/home" element={<HomeRoute />} />
+        <Route path="/projects" element={<Projects />} />
+        <Route path="/progress" element={<AgentProgress />} />
+        <Route path="/review" element={<HumanReview />} />
+        <Route path="/results" element={<ResultsDashboard />} />
+        <Route path="/financials" element={<FinancialModel />} />
+        <Route path="/pivot" element={<PivotSimulator />} />
+        <Route path="/market" element={<MarketResearch />} />
+        <Route path="/legal" element={<LegalCompliance />} />
+        <Route path="/pitch" element={<PitchDeckEditor />} />
+        <Route path="/mvp" element={<MVPArchitecture />} />
+        <Route path="/how-it-works" element={<HowItWorks />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/error" element={<ErrorState />} />
+        <Route path="/components" element={<ComponentLibrary />} />
+        <Route path="/community" element={<CommunityRoute />} />
+        <Route path="/ideas/:id" element={<IdeaDetailRoute />} />
+        <Route path="/users/:username" element={<UserProfile />} />
+        <Route path="*" element={<LandingRoute />} />
+      </Routes>
+    </Suspense>
   );
 }
 
