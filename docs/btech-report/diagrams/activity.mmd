@@ -1,0 +1,20 @@
+flowchart TD
+    A([User submits idea at /home]) --> B[POST /api/generate]
+    B --> C[Initialize StartupState and start_run]
+    C --> D[Run: orchestrator -> market_research -> validator_market]
+    D --> E{Market validator requests revision?}
+    E -- Yes, retries < 2 --> D
+    E -- No / retry limit reached --> F[business_planning]
+    F --> G[Set awaiting_human_review=true and status=paused]
+    G --> H[Frontend opens /review and fetches /api/review/{thread_id}]
+    H --> I{User action}
+    I -->|Approve| J[POST /api/review/approve]
+    I -->|Patch| K[POST /api/review/patch]
+    J --> L[resume_run]
+    K --> L
+    L --> M[financial_engineering -> validator_financial]
+    M --> N{Financial validator requests revision?}
+    N -- Yes, retries < 2 --> M
+    N -- No / retry limit reached --> O[legal_compliance -> pitch_deck -> mvp_architecture -> pivot_simulator -> briefing]
+    O --> P[status=complete; emit complete event]
+    P --> Q[User views /results and exports outputs]
