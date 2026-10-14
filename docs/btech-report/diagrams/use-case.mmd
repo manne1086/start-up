@@ -1,0 +1,42 @@
+flowchart LR
+    actor_guest([Guest Visitor])
+    actor_user([Authenticated User])
+    actor_owner([Idea Owner])
+
+    subgraph VF[VentureForge System]
+      uc_view[Browse landing and how-it-works pages]
+      uc_login[Sign in with Google OAuth]
+      uc_home[Open authenticated home and projects]
+      uc_generate[Start venture generation]
+      uc_stream[Receive live SSE progress logs]
+      uc_review[Review business plan checkpoint]
+      uc_approve[Approve or patch run]
+      uc_results[View generated outputs]
+      uc_export[Export pitch deck (PPTX)]
+      uc_assistant[Ask review assistant]
+      uc_ideas[List community ideas]
+      uc_publish[Publish idea from run]
+      uc_interact[Comment / react / express interest]
+      uc_manage[Toggle visibility / delete own idea]
+      uc_profile[View public profiles]
+      uc_notify[Read notifications]
+    end
+
+    actor_guest --> uc_view
+    actor_guest --> uc_login
+    actor_guest --> uc_ideas
+    actor_guest --> uc_profile
+
+    actor_user --> uc_home
+    actor_user --> uc_generate
+    actor_user --> uc_stream
+    actor_user --> uc_review
+    actor_user --> uc_approve
+    actor_user --> uc_results
+    actor_user --> uc_export
+    actor_user --> uc_assistant
+    actor_user --> uc_publish
+    actor_user --> uc_interact
+    actor_user --> uc_notify
+
+    actor_owner --> uc_manage

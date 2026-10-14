@@ -1,0 +1,103 @@
+classDiagram
+    class StartupState {
+      +str thread_id
+      +str user_id
+      +str idea
+      +str startup_name
+      +str industry
+      +Literal status
+      +bool awaiting_human_review
+      +bool human_approved
+      +MarketData market
+      +BusinessPlan business_plan
+      +FinancialModel financials
+      +LegalReport legal
+      +PitchDeckData pitch_deck
+      +MVPData mvp
+      +PivotOption[] pivots
+      +ExecutiveBriefing briefing
+      +dict retry_counts
+      +dict revision_reasons
+    }
+
+    class RunRecord {
+      +StartupState state
+      +bool paused
+      +bool done
+      +task
+    }
+
+    class User {
+      +text id (PK)
+      +text email
+      +text name
+      +text picture
+      +text username (UNIQUE)
+      +text bio
+      +timestamptz created_at
+    }
+
+    class Idea {
+      +uuid id (PK)
+      +text title
+      +text one_liner
+      +text description
+      +text domain
+      +text owner_id (FK users.id)
+      +bool is_public
+      +double ai_validation_score
+      +jsonb ai_summary_json
+      +uuid forked_from_id (self FK)
+      +timestamptz created_at
+    }
+
+    class Comment {
+      +uuid id (PK)
+      +uuid idea_id (FK ideas.id)
+      +text user_id (FK users.id)
+      +text content
+      +uuid parent_comment_id (self FK)
+      +timestamptz created_at
+    }
+
+    class Reaction {
+      +uuid id (PK)
+      +uuid idea_id (FK ideas.id)
+      +text user_id (FK users.id)
+      +reaction_type type
+      +UNIQUE(idea_id,user_id,type)
+    }
+
+    class Interest {
+      +uuid id (PK)
+      +uuid idea_id (FK ideas.id)
+      +text user_id (FK users.id)
+      +text message
+      +timestamptz created_at
+      +UNIQUE(idea_id,user_id)
+    }
+
+    class Notification {
+      +uuid id (PK)
+      +text user_id (FK users.id)
+      +text actor_id (FK users.id)
+      +text type
+      +uuid idea_id (FK ideas.id)
+      +text message
+      +bool is_read
+      +timestamptz created_at
+    }
+
+    RunRecord --> StartupState : holds runtime state
+    User "1" --> "0..*" Idea : owns
+    Idea "1" --> "0..*" Comment : has
+    Idea "1" --> "0..*" Reaction : has
+    Idea "1" --> "0..*" Interest : has
+    Idea "1" --> "0..*" Notification : context
+    User "1" --> "0..*" Comment : writes
+    User "1" --> "0..*" Reaction : creates
+    User "1" --> "0..*" Interest : expresses
+    User "1" --> "0..*" Notification : receives
+    User "1" --> "0..*" Notification : acts(actor_id)
+    Idea "0..1" --> "0..*" Idea : fork lineage
+    Comment "0..1" --> "0..*" Comment : threaded replies

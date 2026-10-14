@@ -1,0 +1,35 @@
+flowchart TB
+    subgraph Client[Client Device]
+      B[Web Browser\nReact SPA]
+    end
+
+    subgraph Vercel[Vercel Static Hosting (configured)]
+      FE[dist assets from Vite build]
+    end
+
+    subgraph Render[Render Web Service (configured)]
+      API[FastAPI app\nuvicorn in Docker]
+    end
+
+    subgraph Data[Data Services]
+      PG[(PostgreSQL 16)]
+      RD[(Redis 7)]
+    end
+
+    subgraph External[External APIs]
+      GOOG[Google OAuth]
+      GROQ[Groq via langchain-groq]
+      TAV[Tavily Search API]
+      PRES[Presenton/Presentations API]
+      IMG[Hugging Face / Unsplash (optional config)]
+    end
+
+    B <-->|HTTPS| FE
+    B <-->|HTTPS + cookies| API
+    API <-->|SQL| PG
+    API <-->|Configured in compose/env| RD
+    API <-->|OIDC flow| GOOG
+    API <-->|LLM calls| GROQ
+    API <-->|Web search| TAV
+    API <-->|PPT generation| PRES
+    API <-->|Image fetch/generation| IMG

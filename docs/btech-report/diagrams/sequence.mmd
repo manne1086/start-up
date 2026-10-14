@@ -1,0 +1,34 @@
+sequenceDiagram
+    actor U as User
+    participant FE as React Frontend
+    participant API as FastAPI Backend
+    participant RM as Run Manager
+    participant GQ as Groq LLM
+    participant TV as Tavily Search
+    participant DB as PostgreSQL
+
+    U->>FE: Enter idea and click Generate
+    FE->>API: POST /api/generate
+    API->>RM: start_run(StartupState)
+    RM->>DB: Persist run state (ventureforge_run_states)
+    API-->>FE: thread_id + initial state
+    FE->>API: GET /api/stream/{thread_id} (SSE)
+
+    RM->>GQ: orchestrator reasoning
+    RM->>TV: market_research queries
+    TV-->>RM: search results
+    RM->>GQ: market synthesis and validator check
+    RM->>GQ: business planning
+    RM-->>FE: SSE review event (paused)
+
+    U->>FE: Approve/Patch at review
+    FE->>API: POST /api/review/approve or /patch
+    API->>RM: resume_run(thread_id, patch?)
+    RM->>GQ: financial/legal/pitch/mvp/pivot/briefing
+    RM->>DB: Persist final run state
+    RM-->>FE: SSE complete event
+
+    U->>FE: Export pitch deck
+    FE->>API: POST /api/outputs/pptx
+    API->>RM: get_run_state(thread_id)
+    API-->>FE: PPTX file response

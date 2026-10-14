@@ -1,0 +1,70 @@
+flowchart LR
+    subgraph UI[Frontend: React + Vite]
+      MAIN[src/main.tsx]
+      APP[src/App.tsx routes]
+      AUTH[src/auth.tsx]
+      GEN[src/generation.tsx]
+      NOTI[src/notifications.tsx]
+      COMP[Feature components\n(Home, AgentProgress, HumanReview, Results, Community)]
+    end
+
+    subgraph API[Backend: FastAPI]
+      M[main.py]
+      AR[api/routes/*]
+      CR[routers/community.py]
+      NR[routers/notifications.py]
+      UR[routers/users.py]
+    end
+
+    subgraph Runtime[AI Orchestration]
+      RM[services/run_manager.py\npause/resume orchestration]
+      LG[graph/graph.py\nLangGraph compile + interrupt_before]
+      NODES[graph/nodes/*\norchestrator...briefing]
+      SSE[services/stream_manager.py]
+    end
+
+    subgraph Data[Persistence]
+      DB[core/database.py\nraw SQL + schema bootstrap]
+      PG[(PostgreSQL)]
+      CP[graph/checkpointer.py\nAsyncPostgresSaver]
+    end
+
+    subgraph Ext[External Integrations]
+      OAUTH[Google OAuth/Authlib]
+      LLM[Groq models]
+      SEARCH[Tavily]
+      EXPORT[Presenton + python-pptx]
+    end
+
+    MAIN --> APP
+    APP --> AUTH
+    APP --> GEN
+    APP --> NOTI
+    APP --> COMP
+
+    COMP -->|fetch/SSE| AR
+    COMP -->|fetch| CR
+    COMP -->|fetch| NR
+    COMP -->|fetch| UR
+
+    M --> AR
+    M --> CR
+    M --> NR
+    M --> UR
+    AR --> RM
+    RM --> NODES
+    RM --> SSE
+    LG --> NODES
+    M --> LG
+
+    AR --> DB
+    CR --> DB
+    NR --> DB
+    UR --> DB
+    DB --> PG
+    CP --> PG
+
+    AR --> OAUTH
+    NODES --> LLM
+    NODES --> SEARCH
+    AR --> EXPORT
