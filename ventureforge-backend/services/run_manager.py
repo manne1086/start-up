@@ -189,9 +189,13 @@ async def resume_run(thread_id: str, patch: dict[str, Any] | None = None) -> Sta
         RUNS[thread_id] = record
     if patch:
         record.state.human_patch.update(patch)
+    # A human approval should acknowledge immediately. The long-running
+    # post-review pipeline is delivered through the existing SSE stream.
+    record.state.awaiting_human_review = False
+    record.state.human_approved = True
+    record.state.status = "running"
     if not record.task or record.task.done():
         record.task = asyncio.create_task(run_after_resume(thread_id))
-    await record.task
     return record.state
 
 
