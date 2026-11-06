@@ -347,19 +347,44 @@ export function GenerationProvider({ children }: { children: React.ReactNode }) 
     setIdea(cleanedIdea);
     setBackendState(null);
 
-    const response = await fetch(`${API_URL}/api/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({
-        idea: cleanedIdea,
-        user_id: 'anonymous',
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${API_URL}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          idea: cleanedIdea,
+          user_id: 'anonymous',
+        }),
+      });
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : 'Failed to connect to the backend.';
+      closeStream();
+      setStatus('failed');
+      setError(message);
+      setBackendState((current) => normalizeState(
+        { ...(current ?? {}), status: 'failed', error: message },
+        null,
+        cleanedIdea,
+        'failed',
+      ));
+      throw new Error(`Backend connection failed: ${message}`);
+    }
 
     if (!response.ok) {
       const body = await response.text();
-      throw new Error(body || 'Failed to start generation.');
+      const message = body || `Backend returned HTTP ${response.status}.`;
+      closeStream();
+      setStatus('failed');
+      setError(message);
+      setBackendState((current) => normalizeState(
+        { ...(current ?? {}), status: 'failed', error: message },
+        null,
+        cleanedIdea,
+        'failed',
+      ));
+      throw new Error(message);
     }
 
     const data = await response.json() as { thread_id?: string; state?: GenerationState };
