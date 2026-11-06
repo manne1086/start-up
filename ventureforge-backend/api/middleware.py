@@ -9,7 +9,7 @@ def configure_middleware(app: FastAPI) -> None:
     # Credentialed browser requests cannot use a wildcard origin. Production
     # requests include the session cookie, so derive the allowed origin from
     # the configured frontend URL unless an explicit allowlist is provided.
-    if settings.APP_ENV == "production" and settings.ALLOWED_ORIGINS == "*":
+    if settings.ALLOWED_ORIGINS == "*" and settings.FRONTEND_URL:
         origins = [settings.FRONTEND_URL.rstrip("/")]
     else:
         origins = [o.strip().rstrip("/") for o in settings.ALLOWED_ORIGINS.split(",")] if settings.ALLOWED_ORIGINS != "*" else ["*"]
